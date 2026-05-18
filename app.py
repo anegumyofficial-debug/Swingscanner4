@@ -34,7 +34,7 @@ def load_all_indonesia_tickers():
         "BUMI", "DEWA", "TOBA", "MEDC", "ENRG", "PGAS", "AKRA", "PGEO", "ANTM", "TINS", 
         "INCO", "MDKA", "MBMA", "NCKL", "BRMS", "DKFT", "PSAB", "ZINC", "IFSH", "MBAP", 
         "SGER", "DSSA", "ELPI", "APEX", "ARTI", "BIPI", "BOSS", "CTTH", "CUAN",
-        "GREN", "IATA", "MDVS", "MITI", "PKPK", "RMKO", "RMKE", "SURE", "WOWS",
+        "GREN", "IATA", "MDVS", "MITI", "PKPK", "RMKO", "RMKE", "SURE", "WOWS", "PTRO",
         
         # --- INFRASTRUKTUR, TELEKOMUNIKASI & LOGISTIK ---
         "MORA", "TLKM", "EXCL", "ISAT", "FREN", "TOWR", "TBIG", "CENT", "JSMR", "BIRD", 
