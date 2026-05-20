@@ -33,7 +33,7 @@ def load_all_indonesia_tickers():
         "AADI", "ADRO", "PTBA", "ITMG", "HRUM", "INDY", "DOID", "KKGI", "BYAN", "GEMS", 
         "BUMI", "DEWA", "TOBA", "MEDC", "ENRG", "PGAS", "AKRA", "PGEO", "ANTM", "TINS", 
         "INCO", "MDKA", "MBMA", "NCKL", "BRMS", "DKFT", "PSAB", "ZINC", "IFSH", "MBAP", 
-        "SGER", "DSSA", "ELPI", "APEX", "ARTI", "BIPI", "BOSS", "CTTH", "CUAN",
+        "SGER", "DSSA", "ELPI", "APEX", "ARTI", "BIPI", "BOSS", "CTTH", "CUAN", "UNTR",
         "GREN", "IATA", "MDVS", "MITI", "PKPK", "RMKO", "RMKE", "SURE", "WOWS", "PTRO",
         
         # --- INFRASTRUKTUR, TELEKOMUNIKASI & LOGISTIK ---
@@ -206,7 +206,7 @@ with st.sidebar:
     )
     
     if pilihan_mode == "Saham Pilihan Utama (LQ45/Bluechip)":
-        saham_di_scan = ["BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "GOTO", "UNVR", "ADRO", "PTBA", "BRIS", "ANTM", "INDF", "ICBP", "KLBF", "AMMN", "MDKA", "SIDO", "AADI", "CMRY"]
+        saham_di_scan = ["AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR", "GGRM"]
     elif pilihan_mode == "Kustom Pilih Sendiri (Multi-Select)":
         saham_di_scan = st.multiselect("Ketik & Pilih Kode Saham:", options=master_tickers_clean, default=["BBCA", "BBRI", "AADI", "CMRY"])
     else:
