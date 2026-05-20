@@ -206,7 +206,7 @@ with st.sidebar:
     )
     
     if pilihan_mode == "Saham Pilihan Utama (LQ45/Bluechip)":
-        saham_di_scan = ["AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR", "GGRM"]
+        saham_di_scan = ["AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR", "GGRM","SGRO"]
     elif pilihan_mode == "Kustom Pilih Sendiri (Multi-Select)":
         saham_di_scan = st.multiselect("Ketik & Pilih Kode Saham:", options=master_tickers_clean, default=["BBCA", "BBRI", "AADI", "CMRY"])
     else:
