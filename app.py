@@ -142,9 +142,7 @@ def analyze_market_momentum(ticker):
         elif last_rsi < 25: 
             potensi_change_pct += 1.5
             
-        # --- PERHITUNGAN PREDIKSI NILAI SAHAM NOMINAL (NEW) ---
         prediksi_harga_saham = last_price * (1 + (potensi_change_pct / 100.0))
-        # Pembulatan pecahan fraksi harga saham BEI biar rapi (di bawah Rp200 tanpa desimal, dst)
         if prediksi_harga_saham < 200:
             prediksi_harga_saham = round(prediksi_harga_saham)
         else:
@@ -195,7 +193,6 @@ def analyze_market_momentum(ticker):
             stop_loss = 0
             take_profit = 0
             
-        # Posisi key diatur berurutan agar tampilan tabel berdampingan langsung
         return {
             "Ticker": ticker_name,
             "Price": last_price,
@@ -333,7 +330,10 @@ if len(saham_pilihan) > 0:
         elif filter_mode == "Hanya Struktur Up-Trend":
             df_radar = df_radar[df_radar["Trend"].str.contains("Up-Trend")]
             
-        df_radar = df_radar.sort_values(by="Change %", ascending=False)
+        # --- LOGIK FILTER UTAMA (SORTING OTOMATIS SAAT REFRESH) ---
+        # Data akan diurutkan berdasarkan Dana Masuk % tertinggi, 
+        # Jika ada yang nilainya sama, akan diurutkan berdasarkan Net Foreign Avg tertinggi.
+        df_radar = df_radar.sort_values(by=["Dana Masuk %", "Net Foreign Avg"], ascending=[False, False])
         
         def style_radar_rows(row):
             styles = [''] * len(row)
@@ -355,7 +355,6 @@ if len(saham_pilihan) > 0:
             styles[idx_masuk] = 'color: #4ADE80; font-weight: bold;'
             styles[idx_keluar] = 'color: #F87171;'
             
-            # Pewarnaan Blok Potensi Perubahan & Kolom Prediksi Harga Nominalis
             if potensi > 0:
                 styles[idx_potensi] = 'color: #22C55E; font-weight: bold; background-color: #052E16;'
                 styles[idx_prediksi] = 'color: #4ADE80; font-weight: bold;'
