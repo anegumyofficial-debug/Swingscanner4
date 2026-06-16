@@ -92,6 +92,7 @@ def analyze_market_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
         
+        # Mengembalikan konfigurasi ke mode harian 3 bulan standar yang stabil
         df = yf.download(formatted_ticker, period="3mo", interval="1d", progress=False)
         df = clean_yf_dataframe(df)
         
@@ -129,18 +130,46 @@ def analyze_market_momentum(ticker):
         p_masuk = max(5.0, min(95.0, p_masuk))
         p_keluar = 100.0 - p_masuk
         
-        # Simulasi asing dalam Miliar (B) dan Satuan Rupiah (S)
-        simulated_net_foreign_b = (last_volume * last_price * 0.12) / 1_000_000_000
-        if change_pct < -1.0:
-            simulated_net_foreign_b = -abs(simulated_net_foreign_b)
-            
-        simulated_net_foreign_s = simulated_net_foreign_b * 1_000_000_000
+        # --- LOGIKA BARU: MULTI-FOREIGN FLOW ANALYSIS ---
+        simulated_flow_base = (last_volume * last_price * 0.12) / 1_000_000_000
         
-        if simulated_net_foreign_b > 15.0 and change_pct > 1.0:
+        # 1. Split Est Net For Buy & Sell
+        if change_pct >= -1.0:
+            est_buy_b = round(simulated_flow_base, 2)
+            est_sell_s = 0.0
+        else:
+            est_buy_b = 0.0
+            est_sell_s = round(-abs(simulated_flow_base), 2)
+            
+        # 2. Perhitungan Net Foreign Average (Menggunakan data 10 hari terakhir)
+        hist_volumes = df['Volume'].tail(10).values
+        hist_prices = df['Close'].tail(10).values
+        hist_changes = df['Close'].pct_change().tail(10).values
+        
+        hist_flows = []
+        for v, p, c in zip(hist_volumes, hist_prices, hist_changes):
+            flow = (v * p * 0.12) / 1_000_000_000
+            if not pd.isna(c) and c < -0.01:
+                flow = -abs(flow)
+            hist_flows.append(flow)
+            
+        net_foreign_avg = round(sum(hist_flows) / len(hist_flows), 2) if hist_flows else 0.0
+        
+        # 3. Potensi Persentase Dampak Peningkatan / Penurunan Harga
+        total_turnover_b = (last_volume * last_price) / 1_000_000_000
+        if total_turnover_b > 0:
+            current_net = est_buy_b if est_buy_b > 0 else est_sell_s
+            potensi_impact = (current_net / total_turnover_b) * 100 * (1 if change_pct >= 0 else -1)
+        else:
+            potensi_impact = 0.0
+            
+        # Labeling Institusi Berdasarkan Flow Terkini
+        net_actual_flow = est_buy_b if est_buy_b > 0 else est_sell_s
+        if net_actual_flow > 15.0:
             inst_flow = "🐋 Big Accum"
-        elif simulated_net_foreign_b > 0 and change_pct > 0:
+        elif net_actual_flow > 0:
             inst_flow = "🐟 Small Accum"
-        elif simulated_net_foreign_b < -15.0 and change_pct < -1.0:
+        elif net_actual_flow < -15.0:
             inst_flow = "🚨 Distribution"
         else:
             inst_flow = "⏳ Neutral"
@@ -164,7 +193,6 @@ def analyze_market_momentum(ticker):
             
         ticker_name = ticker.replace(".JK", "")
         
-        # Sinyal Aksi & Set Target Harga
         if last_price > last_ema9 and last_k > last_d and last_rsi < 45 and last_volume > (last_vol_ma * 1.1):
             action_signal = "🔥 SUPER BUY"
             stop_loss = round(min(last_ema9, last_ema20), 0)
@@ -175,24 +203,21 @@ def analyze_market_momentum(ticker):
             take_profit = round(last_price * 1.05, 0)
         elif last_price < last_ema9 and last_k < last_d and last_rsi > 70:
             action_signal = "🚨 RISK (Jenuh Beli)"
-            stop_loss = round(last_price * 0.90, 0) # Ditentukan dasar level proteksi risiko
-            take_profit = round(last_price * 0.98, 0)
+            stop_loss = 0
+            take_profit = 0
         else:
             action_signal = "⏳ Wait / Neutral"
-            stop_loss = round(last_price * 0.95, 0)
-            take_profit = round(last_price * 1.05, 0)
+            stop_loss = 0
+            take_profit = 0
             
-        # --- PERHITUNGAN POTENSI PERSENTASE PENINGKATAN / PENURUNAN ---
-        # Mengukur deviasi target dari harga saat ini 
-        potensi_up = ((take_profit - last_price) / last_price) * 100
-        potensi_down = ((stop_loss - last_price) / last_price) * 100
-        
         return {
             "Ticker": ticker_name,
             "Price": last_price,
             "Change %": round(change_pct, 2),
-            "Net For (B)": round(simulated_net_foreign_b, 2),
-            "Est Net For (S)": round(simulated_net_foreign_s, 0),
+            "Est For Buy (B)": est_buy_b,
+            "Est For Sell (S)": est_sell_s,
+            "Net Foreign Avg": net_foreign_avg,
+            "Potensi Dampak %": round(potensi_impact, 2),
             "Inst Flow": inst_flow,
             "IDS Disclosure": ids_disclosure,
             "Dana Masuk %": round(p_masuk, 1),
@@ -203,9 +228,7 @@ def analyze_market_momentum(ticker):
             "Trend": trend_label,
             "Actionable": action_signal,
             "Proteksi SL": stop_loss,
-            "Target TP": take_profit,
-            "Potensi Naik %": round(potensi_up, 2),
-            "Potensi Turun %": round(potensi_down, 2)
+            "Target TP": take_profit
         }
     except:
         return None
@@ -330,6 +353,7 @@ if len(saham_pilihan) > 0:
             trend = str(row['Trend'])
             flow = str(row['Inst Flow'])
             disc = str(row['IDS Disclosure'])
+            potensi = float(row['Potensi Dampak %'])
             
             idx_action = row.index.get_loc('Actionable')
             idx_trend = row.index.get_loc('Trend')
@@ -337,13 +361,16 @@ if len(saham_pilihan) > 0:
             idx_disc = row.index.get_loc('IDS Disclosure')
             idx_masuk = row.index.get_loc('Dana Masuk %')
             idx_keluar = row.index.get_loc('Dana Keluar %')
-            idx_up = row.index.get_loc('Potensi Naik %')
-            idx_down = row.index.get_loc('Potensi Turun %')
+            idx_potensi = row.index.get_loc('Potensi Dampak %')
             
             styles[idx_masuk] = 'color: #4ADE80; font-weight: bold;'
             styles[idx_keluar] = 'color: #F87171;'
-            styles[idx_up] = 'color: #4ADE80; font-weight: bold;'
-            styles[idx_down] = 'color: #F87171;'
+            
+            # Mewarnai kolom Potensi Dampak %
+            if potensi > 0:
+                styles[idx_potensi] = 'color: #4ADE80; font-weight: bold;'
+            elif potensi < 0:
+                styles[idx_potensi] = 'color: #F87171; font-weight: bold;'
             
             if "SUPER BUY" in action:
                 styles[idx_action] = 'background-color: #15803D; color: white; font-weight: bold;'
@@ -367,16 +394,16 @@ if len(saham_pilihan) > 0:
                                       .format({
                                           "Price": "Rp {:,.0f}",
                                           "Change %": "{:+.2f}%",
-                                          "Net For (B)": "{:+.2f} B",
-                                          "Est Net For (S)": "Rp {:,.0f}",
+                                          "Est For Buy (B)": "{:,.2f} B",
+                                          "Est For Sell (S)": "{:,.2f} B",
+                                          "Net Foreign Avg": "{:+.2f} B",
+                                          "Potensi Dampak %": "{:+.2f}%",
                                           "Dana Masuk %": "{:.1f}%",
                                           "Dana Keluar %": "{:.1f}%",
                                           "Nego Price": "Rp {:,.0f}",
                                           "RSI": "{:.2f}",
                                           "Proteksi SL": "Rp {:,.0f}",
-                                          "Target TP": "Rp {:,.0f}",
-                                          "Potensi Naik %": "{:+.2f}%",
-                                          "Potensi Turun %": "{:.2f}%"
+                                          "Target TP": "Rp {:,.0f}"
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=520)
