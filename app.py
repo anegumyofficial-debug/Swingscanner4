@@ -92,7 +92,6 @@ def analyze_market_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
         
-        # Mengembalikan konfigurasi ke mode harian 3 bulan standar yang stabil
         df = yf.download(formatted_ticker, period="3mo", interval="1d", progress=False)
         df = clean_yf_dataframe(df)
         
@@ -130,15 +129,18 @@ def analyze_market_momentum(ticker):
         p_masuk = max(5.0, min(95.0, p_masuk))
         p_keluar = 100.0 - p_masuk
         
-        simulated_net_foreign = (last_volume * last_price * 0.12) / 1_000_000_000
+        # Simulasi asing dalam Miliar (B) dan Satuan Rupiah (S)
+        simulated_net_foreign_b = (last_volume * last_price * 0.12) / 1_000_000_000
         if change_pct < -1.0:
-            simulated_net_foreign = -abs(simulated_net_foreign)
+            simulated_net_foreign_b = -abs(simulated_net_foreign_b)
             
-        if simulated_net_foreign > 15.0 and change_pct > 1.0:
+        simulated_net_foreign_s = simulated_net_foreign_b * 1_000_000_000
+        
+        if simulated_net_foreign_b > 15.0 and change_pct > 1.0:
             inst_flow = "🐋 Big Accum"
-        elif simulated_net_foreign > 0 and change_pct > 0:
+        elif simulated_net_foreign_b > 0 and change_pct > 0:
             inst_flow = "🐟 Small Accum"
-        elif simulated_net_foreign < -15.0 and change_pct < -1.0:
+        elif simulated_net_foreign_b < -15.0 and change_pct < -1.0:
             inst_flow = "🚨 Distribution"
         else:
             inst_flow = "⏳ Neutral"
@@ -162,6 +164,7 @@ def analyze_market_momentum(ticker):
             
         ticker_name = ticker.replace(".JK", "")
         
+        # Sinyal Aksi & Set Target Harga
         if last_price > last_ema9 and last_k > last_d and last_rsi < 45 and last_volume > (last_vol_ma * 1.1):
             action_signal = "🔥 SUPER BUY"
             stop_loss = round(min(last_ema9, last_ema20), 0)
@@ -172,18 +175,24 @@ def analyze_market_momentum(ticker):
             take_profit = round(last_price * 1.05, 0)
         elif last_price < last_ema9 and last_k < last_d and last_rsi > 70:
             action_signal = "🚨 RISK (Jenuh Beli)"
-            stop_loss = 0
-            take_profit = 0
+            stop_loss = round(last_price * 0.90, 0) # Ditentukan dasar level proteksi risiko
+            take_profit = round(last_price * 0.98, 0)
         else:
             action_signal = "⏳ Wait / Neutral"
-            stop_loss = 0
-            take_profit = 0
+            stop_loss = round(last_price * 0.95, 0)
+            take_profit = round(last_price * 1.05, 0)
             
+        # --- PERHITUNGAN POTENSI PERSENTASE PENINGKATAN / PENURUNAN ---
+        # Mengukur deviasi target dari harga saat ini 
+        potensi_up = ((take_profit - last_price) / last_price) * 100
+        potensi_down = ((stop_loss - last_price) / last_price) * 100
+        
         return {
             "Ticker": ticker_name,
             "Price": last_price,
             "Change %": round(change_pct, 2),
-            "Net For (B)": round(simulated_net_foreign, 2),
+            "Net For (B)": round(simulated_net_foreign_b, 2),
+            "Est Net For (S)": round(simulated_net_foreign_s, 0),
             "Inst Flow": inst_flow,
             "IDS Disclosure": ids_disclosure,
             "Dana Masuk %": round(p_masuk, 1),
@@ -194,7 +203,9 @@ def analyze_market_momentum(ticker):
             "Trend": trend_label,
             "Actionable": action_signal,
             "Proteksi SL": stop_loss,
-            "Target TP": take_profit
+            "Target TP": take_profit,
+            "Potensi Naik %": round(potensi_up, 2),
+            "Potensi Turun %": round(potensi_down, 2)
         }
     except:
         return None
@@ -268,7 +279,6 @@ except Exception as e:
 
 st.markdown("</div>", unsafe_allow_html=True)
 
-# Keterangan diperbarui tanpa embel-embel auto-refresh
 st.write(f"⏰ Jam Sinkronisasi Terakhir: **{wib_now.strftime('%d-%m-%Y %H:%M:%S')} WIB** (Delay Yahoo Finance ±10-15 Menit)")
 
 if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"):
@@ -327,9 +337,13 @@ if len(saham_pilihan) > 0:
             idx_disc = row.index.get_loc('IDS Disclosure')
             idx_masuk = row.index.get_loc('Dana Masuk %')
             idx_keluar = row.index.get_loc('Dana Keluar %')
+            idx_up = row.index.get_loc('Potensi Naik %')
+            idx_down = row.index.get_loc('Potensi Turun %')
             
             styles[idx_masuk] = 'color: #4ADE80; font-weight: bold;'
             styles[idx_keluar] = 'color: #F87171;'
+            styles[idx_up] = 'color: #4ADE80; font-weight: bold;'
+            styles[idx_down] = 'color: #F87171;'
             
             if "SUPER BUY" in action:
                 styles[idx_action] = 'background-color: #15803D; color: white; font-weight: bold;'
@@ -354,12 +368,15 @@ if len(saham_pilihan) > 0:
                                           "Price": "Rp {:,.0f}",
                                           "Change %": "{:+.2f}%",
                                           "Net For (B)": "{:+.2f} B",
+                                          "Est Net For (S)": "Rp {:,.0f}",
                                           "Dana Masuk %": "{:.1f}%",
                                           "Dana Keluar %": "{:.1f}%",
                                           "Nego Price": "Rp {:,.0f}",
                                           "RSI": "{:.2f}",
                                           "Proteksi SL": "Rp {:,.0f}",
-                                          "Target TP": "Rp {:,.0f}"
+                                          "Target TP": "Rp {:,.0f}",
+                                          "Potensi Naik %": "{:+.2f}%",
+                                          "Potensi Turun %": "{:.2f}%"
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=520)
