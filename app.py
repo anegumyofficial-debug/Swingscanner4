@@ -121,7 +121,6 @@ def analyze_market_momentum(ticker):
         prev_price = float(df['Close'].iloc[-2])
         change_pct = ((last_price - prev_price) / prev_price) * 100
         
-        # --- PERHITUNGAN PERSENTASE DANA ---
         if change_pct >= 0:
             p_masuk = 50 + (min(change_pct * 5, 45))
         else:
@@ -130,28 +129,27 @@ def analyze_market_momentum(ticker):
         p_masuk = max(5.0, min(95.0, p_masuk))
         p_keluar = 100.0 - p_masuk
 
-        # --- MODELING MATEMATIS BANDARMOLOGI & ARUS ASING (NEW) ---
-        total_turnover_b = (last_volume * last_price) / 1_000_000_000 # Total Nilai Transaksi dlm Miliar
+        total_turnover_b = (last_volume * last_price) / 1_000_000_000 
         
-        # Menggunakan p_masuk dan p_keluar sebagai bobot estimasi partisipasi Asing
         est_foreign_buy = total_turnover_b * (p_masuk / 100.0) * 0.25
         est_foreign_sell = total_turnover_b * (p_keluar / 100.0) * 0.25
-        
-        # Net Foreign Netto (B)
         net_foreign_b = est_foreign_buy - est_foreign_sell
-        
-        # Net Foreign Average (Rata-rata Transaksi Berbobot Volume)
         net_foreign_avg = (est_foreign_buy + est_foreign_sell) / 2 if total_turnover_b > 0 else 0
         
-        # Potensi Prediksi Perubahan Saham Valid Berbasis Arus Dana & Momentum RSI (%)
-        # Korelasi langsung untuk memvalidasi arah live "Change %" berikutnya
         potensi_change_pct = (net_foreign_b / (last_vol_ma * last_price / 1_000_000_000 + 1)) * 10.0
-        if last_rsi > 75:  # Pembatas jika kondisi jenuh beli
+        if last_rsi > 75:  
             potensi_change_pct -= 1.5
-        elif last_rsi < 25: # Booster jika kondisi jenuh jual
+        elif last_rsi < 25: 
             potensi_change_pct += 1.5
             
-        # --- KATEGORISASI INST FLOW ---
+        # --- PERHITUNGAN PREDIKSI NILAI SAHAM NOMINAL (NEW) ---
+        prediksi_harga_saham = last_price * (1 + (potensi_change_pct / 100.0))
+        # Pembulatan pecahan fraksi harga saham BEI biar rapi (di bawah Rp200 tanpa desimal, dst)
+        if prediksi_harga_saham < 200:
+            prediksi_harga_saham = round(prediksi_harga_saham)
+        else:
+            prediksi_harga_saham = round(prediksi_harga_saham / 2) * 2 if prediksi_harga_saham < 500 else round(prediksi_harga_saham / 5) * 5
+
         if net_foreign_b > 5.0 and change_pct > 1.0:
             inst_flow = "🐋 Big Accum"
         elif net_foreign_b > 0 and change_pct > 0:
@@ -197,6 +195,7 @@ def analyze_market_momentum(ticker):
             stop_loss = 0
             take_profit = 0
             
+        # Posisi key diatur berurutan agar tampilan tabel berdampingan langsung
         return {
             "Ticker": ticker_name,
             "Price": last_price,
@@ -206,6 +205,7 @@ def analyze_market_momentum(ticker):
             "Net Foreign (B)": round(net_foreign_b, 2),
             "Net Foreign Avg": round(net_foreign_avg, 2),
             "Potensi +/- (%)": round(potensi_change_pct, 2),
+            "Prediksi Harga": prediksi_harga_saham,
             "Inst Flow": inst_flow,
             "IDS Disclosure": ids_disclosure,
             "Dana Masuk %": round(p_masuk, 1),
@@ -350,15 +350,18 @@ if len(saham_pilihan) > 0:
             idx_masuk = row.index.get_loc('Dana Masuk %')
             idx_keluar = row.index.get_loc('Dana Keluar %')
             idx_potensi = row.index.get_loc('Potensi +/- (%)')
+            idx_prediksi = row.index.get_loc('Prediksi Harga')
             
             styles[idx_masuk] = 'color: #4ADE80; font-weight: bold;'
             styles[idx_keluar] = 'color: #F87171;'
             
-            # Pewarnaan Kolom Potensi Perubahan Prediksi
+            # Pewarnaan Blok Potensi Perubahan & Kolom Prediksi Harga Nominalis
             if potensi > 0:
                 styles[idx_potensi] = 'color: #22C55E; font-weight: bold; background-color: #052E16;'
+                styles[idx_prediksi] = 'color: #4ADE80; font-weight: bold;'
             elif potensi < 0:
                 styles[idx_potensi] = 'color: #EF4444; font-weight: bold; background-color: #451A03;'
+                styles[idx_prediksi] = 'color: #F87171; font-weight: bold;'
             
             if "SUPER BUY" in action:
                 styles[idx_action] = 'background-color: #15803D; color: white; font-weight: bold;'
@@ -387,6 +390,7 @@ if len(saham_pilihan) > 0:
                                           "Net Foreign (B)": "{:+.2f} B",
                                           "Net Foreign Avg": "{:.2f} B",
                                           "Potensi +/- (%)": "{:+.2f}%",
+                                          "Prediksi Harga": "Rp {:,.0f}",
                                           "Dana Masuk %": "{:.1f}%",
                                           "Dana Keluar %": "{:.1f}%",
                                           "Nego Price": "Rp {:,.0f}",
