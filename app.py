@@ -6,37 +6,24 @@ from datetime import datetime
 import pytz  
 import concurrent.futures
 
-# --- FUNGSI Insight ---
+# --- FUNGSI Insight & Lainnya ---
 def generate_insight(row):
-    # Logika kombinasi teknikal, bandarmologi, dan dividen
-    if "SUPER BUY" in str(row['Actionable']):
-        return "🔥 REKOMENDASI: Akumulasi (Sinyal & Trend Kuat)"
-    elif "BUY" in str(row['Actionable']):
-        return "🎯 REKOMENDASI: Buy on Weakness / Entry"
-    elif row['Net Foreign (B)'] < -5.0:
-        return "🚨 WASPADA: Distribusi Asing Besar"
-    elif row['Net Foreign (B)'] > 5.0 and row['Price'] > row['VWAP Baseline']:
-        return "🚀 BULLISH: Dominasi Asing & Trend"
-    elif "N/A" != row['Nilai Dividen'] and row['Actionable'] == "⏳ Wait / Neutral":
-        return "💡 DIVIDEN: Pantau Cum Date"
-    else:
-        return "⏳ NEUTRAL: Wait & See"
+    if "SUPER BUY" in str(row['Actionable']): return "🔥 REKOMENDASI: Akumulasi (Sinyal & Trend Kuat)"
+    elif "BUY" in str(row['Actionable']): return "🎯 REKOMENDASI: Buy on Weakness / Entry"
+    elif row['Net Foreign (B)'] < -5.0: return "🚨 WASPADA: Distribusi Asing Besar"
+    elif row['Net Foreign (B)'] > 5.0 and row['Price'] > row['VWAP Baseline']: return "🚀 BULLISH: Dominasi Asing & Trend"
+    elif "N/A" != row['Nilai Dividen'] and row['Actionable'] == "⏳ Wait / Neutral": return "💡 DIVIDEN: Pantau Cum Date"
+    else: return "⏳ NEUTRAL: Wait & See"
 
-# --- FUNGSI TAMBAHAN DIVIDEN ---
 @st.cache_data(ttl=86400)
 def get_dividend_info(ticker):
     try:
         stock = yf.Ticker(f"{ticker}.JK")
         divs = stock.dividends
-        if divs.empty:
-            return 0.0, "N/A"
-        last_div_value = float(divs.iloc[-1])
-        last_ex_date = divs.index[-1]
-        # Cum date diestimasi 1 hari bursa sebelum ex-date
-        cum_date = last_ex_date - pd.Timedelta(days=1)
-        return last_div_value, cum_date.strftime('%d-%m-%Y')
-    except:
-        return 0.0, "N/A"
+        if divs.empty: return 0.0, "N/A"
+        cum_date = divs.index[-1] - pd.Timedelta(days=1)
+        return float(divs.iloc[-1]), cum_date.strftime('%d-%m-%Y')
+    except: return 0.0, "N/A"
         
 # --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Swing & Scalper Dashboard BEI", layout="wide", page_icon="📈")
@@ -334,27 +321,53 @@ with st.sidebar:
 
 # RENDERING TABEL UTAMA & METRIK PERSENTASE DANA
 if len(saham_pilihan) > 0:
-    with st.spinner("Sedang memproses bandarmologi dan data bursa..."):
+    with st.spinner("Sedang memproses data bursa..."):
         df_radar = run_mega_scanner(saham_pilihan)
     
     if not df_radar.empty:
-        # 1. Jalankan fungsi insight untuk setiap baris
+        # 1. GENERATE INSIGHT
         df_radar['Kesimpulan'] = df_radar.apply(generate_insight, axis=1)
         
-        # 2. Reorder kolom agar Kesimpulan ada di urutan yang tepat
-        cols = list(df_radar.columns)
-        if "Nilai Dividen" in cols and "Cum Date" in cols and "Kesimpulan" in cols:
-            # Pindahkan posisi kolom sesuai urutan yang diinginkan
-            new_order = ['Ticker', 'Price', 'Net Foreign Avg', 'Nilai Dividen', 'Cum Date', 'Kesimpulan']
-            # Tambahkan sisa kolom yang belum ada di daftar new_order
-            for c in cols:
-                if c not in new_order: new_order.append(c)
-            df_radar = df_radar[new_order]
-
-        # 3. Tampilkan tabel dengan styling
-        # ... (Gunakan kode styled_df Anda di sini)
-        st.dataframe(styled_df, use_container_width=True, height=520)
+        # 2. FILTERING
+        if filter_mode == "Hanya Sinyal BUY / SUPER BUY":
+            df_radar = df_radar[df_radar["Actionable"].str.contains("BUY")]
+        elif filter_mode == "Hanya Struktur Up-Trend":
+            df_radar = df_radar[df_radar["Trend"].str.contains("Up-Trend")]
+            
+        df_radar = df_radar.sort_values(by=["Dana Masuk %", "Net Foreign Avg"], ascending=[False, False])
         
+        # 3. REORDER KOLOM
+        cols = ['Ticker', 'Price', 'Net Foreign Avg', 'Nilai Dividen', 'Cum Date', 'Kesimpulan'] + \
+               [c for c in df_radar.columns if c not in ['Ticker', 'Price', 'Net Foreign Avg', 'Nilai Dividen', 'Cum Date', 'Kesimpulan']]
+        df_radar = df_radar[cols]
+
+        # 4. FUNGSI STYLING
+        def style_radar_rows(row):
+            styles = [''] * len(row)
+            try:
+                idx_action = row.index.get_loc('Actionable')
+                idx_masuk = row.index.get_loc('Dana Masuk %')
+                if "SUPER BUY" in str(row['Actionable']): styles[idx_action] = 'background-color: #15803D; color: white; font-weight: bold;'
+                elif "BUY" in str(row['Actionable']): styles[idx_action] = 'background-color: #166534; color: #BBF7D0;'
+                styles[idx_masuk] = 'color: #4ADE80; font-weight: bold;'
+            except: pass
+            return styles
+
+        # 5. RENDER TABEL
+        styled_df = df_radar.style.apply(style_radar_rows, axis=1).format({
+            "Price": "Rp {:,.0f}", "VWAP Baseline": "Rp {:,.0f}", "Prediksi Harga": "Rp {:,.0f}",
+            "Dana Masuk %": "{:.1f}%", "Dana Keluar %": "{:.1f}%", "Net Foreign Avg": "{:.2f} B"
+        })
+        st.dataframe(styled_df, use_container_width=True, height=520)
+
+        # 6. RENDER RINGKASAN DANA
+        avg_masuk = float(df_radar["Dana Masuk %"].mean())
+        st.markdown(f"""<div class='card-dana'>🟢 Rata-rata Dana Masuk: {avg_masuk:.1f}%</div>""", unsafe_allow_html=True)
+        st.progress(avg_masuk / 100.0)
+        
+        # ... [TABEL PANDUAN STRATEGI TETAP SAMA] ...
+    else:
+        st.warning("⚠️ Tidak ada emiten yang lolos kriteria.")        
         # --- LOGIKA REORDER KOLOM ---
         cols = list(df_radar.columns)
         if "Nilai Dividen" in cols and "Cum Date" in cols and "Net Foreign Avg" in cols:
