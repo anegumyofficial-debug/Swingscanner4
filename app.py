@@ -392,7 +392,7 @@ if len(saham_pilihan) > 0:
                                           "Est For Buy (B)": "{:.2f} B",
                                           "Est For Sell (S)": "{:.2f} B",
                                           "Net Foreign (B)": "{:+.2f} B",
-                                          "Net Foreign Avg": "{:.2f} B"
+                                          "Net Foreign Avg": "{:.2f} B",
                                           "Dividen": "{}"
                                       })
             st.dataframe(styled_df, use_container_width=True, height=520)
