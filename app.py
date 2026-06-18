@@ -6,28 +6,23 @@ from datetime import datetime
 import pytz  
 import concurrent.futures
 
+# --- FUNGSI TAMBAHAN DIVIDEN ---
 @st.cache_data(ttl=86400)
 def get_dividend_info(ticker):
     try:
         stock = yf.Ticker(f"{ticker}.JK")
-        # Mengambil data dividen
         divs = stock.dividends
         if divs.empty:
             return 0.0, "N/A"
-        
-        # Mengambil data aksi korporasi untuk mendapatkan Cum Date
-        actions = stock.actions
-        # Cum date biasanya adalah hari kerja sebelum ex-date
-        # Kita ambil yang terbaru
         last_div_value = float(divs.iloc[-1])
         last_ex_date = divs.index[-1]
-        # Estimasi Cum Date (sehari sebelum ex-date)
+        # Cum date diestimasi 1 hari bursa sebelum ex-date
         cum_date = last_ex_date - pd.Timedelta(days=1)
-        
         return last_div_value, cum_date.strftime('%d-%m-%Y')
     except:
         return 0.0, "N/A"
-        # --- 1. KONFIGURASI HALAMAN ---
+        
+# --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Swing & Scalper Dashboard BEI", layout="wide", page_icon="📈")
 
 wib_tz = pytz.timezone('Asia/Jakarta')
@@ -211,7 +206,10 @@ def analyze_market_momentum(ticker):
             action_signal = "⏳ Wait / Neutral"
             stop_loss = 0
             take_profit = 0
-            
+
+        ticker_name = ticker.replace(".JK", "")
+        val_div, date_div = get_dividend_info(ticker_name) 
+        
         return {
             "Ticker": ticker_name,
             "Price": last_price,
@@ -324,6 +322,16 @@ if len(saham_pilihan) > 0:
         df_radar = run_mega_scanner(saham_pilihan)
     
     if not df_radar.empty:
+        # --- LOGIKA REORDER KOLOM ---
+        cols = list(df_radar.columns)
+        if "Nilai Dividen" in cols and "Cum Date" in cols and "Net Foreign Avg" in cols:
+            cols.remove("Nilai Dividen")
+            cols.remove("Cum Date")
+            idx = cols.index("Net Foreign Avg") + 1
+            cols.insert(idx, "Nilai Dividen")
+            cols.insert(idx + 1, "Cum Date")
+            df_radar = df_radar[cols]
+            
         avg_masuk = float(df_radar["Dana Masuk %"].mean())
         avg_keluar = 100.0 - avg_masuk
         st.markdown(f"""
@@ -399,8 +407,8 @@ if len(saham_pilihan) > 0:
                                           "Est For Sell (S)": "{:.2f} B",
                                           "Net Foreign (B)": "{:+.2f} B",
                                           "Net Foreign Avg": "{:.2f} B",
-                                          "Nilai Dividen": "Rp {:,.0f}", 
-                                          "Cum Date": "{}"
+                                      "Nilai Dividen": "Rp {:,.0f}",
+                                      "Cum Date": "{}"
                                       })
             st.dataframe(styled_df, use_container_width=True, height=520)
         
