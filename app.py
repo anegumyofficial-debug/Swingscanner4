@@ -6,27 +6,28 @@ from datetime import datetime
 import pytz  
 import concurrent.futures
 
-@st.cache_data(ttl=86400) # Cache selama 24 jam
-def get_last_dividend_info(ticker):
+@st.cache_data(ttl=86400)
+def get_dividend_info(ticker):
     try:
         stock = yf.Ticker(f"{ticker}.JK")
+        # Mengambil data dividen
         divs = stock.dividends
         if divs.empty:
-            return {"Nilai": "0", "Cum Date": "N/A"}
+            return 0.0, "N/A"
         
-        # Mengambil data terakhir
-        last_date = divs.index[-1]
-        last_val = divs.iloc[-1]
+        # Mengambil data aksi korporasi untuk mendapatkan Cum Date
+        actions = stock.actions
+        # Cum date biasanya adalah hari kerja sebelum ex-date
+        # Kita ambil yang terbaru
+        last_div_value = float(divs.iloc[-1])
+        last_ex_date = divs.index[-1]
+        # Estimasi Cum Date (sehari sebelum ex-date)
+        cum_date = last_ex_date - pd.Timedelta(days=1)
         
-        # Menghitung estimasi Cum Date (Biasanya 1 hari sebelum Ex-Date)
-        # Catatan: Ini adalah pendekatan teknis, data riil bisa bervariasi sesuai KSEI
-        return {
-            "Nilai": f"Rp {last_val:,.0f}",
-            "Ex-Date": last_date.strftime('%d-%m-%Y')
-        }
+        return last_div_value, cum_date.strftime('%d-%m-%Y')
     except:
-        return {"Nilai": "-", "Ex-Date": "-"}        
-# --- 1. KONFIGURASI HALAMAN ---
+        return 0.0, "N/A"
+        # --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Swing & Scalper Dashboard BEI", layout="wide", page_icon="📈")
 
 wib_tz = pytz.timezone('Asia/Jakarta')
@@ -233,8 +234,8 @@ def analyze_market_momentum(ticker):
             "Est For Sell (S)": round(est_foreign_sell, 2),
             "Net Foreign (B)": round(net_foreign_b, 2),
             "Net Foreign Avg": round(net_foreign_avg, 2),
-            "Div Nilai": div_info["Nilai"],   
-            "Div Ex-Date": div_info["Ex-Date"]       
+            "Nilai Dividen": val_div,
+            "Cum Date": date_div       
         }
     except:
         return None
@@ -398,8 +399,8 @@ if len(saham_pilihan) > 0:
                                           "Est For Sell (S)": "{:.2f} B",
                                           "Net Foreign (B)": "{:+.2f} B",
                                           "Net Foreign Avg": "{:.2f} B",
-                                          "Div Nilai": "{}",  
-                                          "Div Ex-Date": "{}"
+                                          "Nilai Dividen": "Rp {:,.0f}", 
+                                          "Cum Date": "{}"
                                       })
             st.dataframe(styled_df, use_container_width=True, height=520)
         
