@@ -8,6 +8,7 @@ import concurrent.futures
 
 # --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Swing & Scalper Dashboard BEI", layout="wide", page_icon="📈")
+
 wib_tz = pytz.timezone('Asia/Jakarta')
 wib_now = datetime.now(wib_tz)
 
@@ -17,16 +18,27 @@ st.markdown("""
     .stApp { background-color: #0F172A; color: #E2E8F0; }
     .main-title { color: #38BDF8; font-weight: 800; }
     .card-dana { background-color: #1E293B; padding: 15px; border-radius: 10px; border: 1px solid #334155; }
-    .card-ihsg { background-color: #1E293B; padding: 20px; border-radius: 12px; border-left: 5px solid #38BDF8; }
+    .card-ihsg { background-color: #1E293B; padding: 20px; border-radius: 12px; border-left: 5px solid #38BDF8; margin-bottom: 25px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. DATABASE MASTER ---
+# --- 3. DATABASE MASTER & FUNGSI DIVIDEN ---
 @st.cache_data(ttl=604800)
 def load_mega_market_tickers():
-    # Daftar emiten Anda... (Tetap sama)
-    saham_300_plus = ["AADI", "AALI", "ABBA", "ADRO", "ANTM", "BBCA", "BBRI", "BBNI", "BBTN", "DSSA", "ESIP", "ESSA", "MDKA", "RMKO", "RMKE", "TLKM", "NZIA"]
+    saham_300_plus = ["AADI", "AALI", "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNTR", "GGRM", "ITMG", "INDF", "ICBP", "KLBF", "ESIP", "ESSA", "MDKA", "RMKO", "RMKE", "DSSA"]
     return sorted(list(set([f"{t.strip().upper()}.JK" for t in saham_300_plus])))
+
+def get_latest_dividend(ticker):
+    try:
+        stock = yf.Ticker(f"{ticker}.JK")
+        divs = stock.dividends
+        if divs is not None and not divs.empty:
+            last_div = divs.iloc[-1]
+            last_date = divs.index[-1].strftime('%d-%m')
+            return f"Rp{int(last_div)} ({last_date})"
+        return "-"
+    except:
+        return "-"
 
 master_tickers_jk = load_mega_market_tickers()
 master_tickers_clean = [t.replace(".JK", "") for t in master_tickers_jk]
@@ -41,49 +53,51 @@ def clean_yf_dataframe(df):
 # --- 4. ENGINE ANALISIS ---
 def analyze_market_momentum(ticker):
     try:
-        formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
-        stock = yf.Ticker(formatted_ticker)
-        df = stock.history(period="3mo")
+        ticker_name = ticker.replace(".JK", "")
+        df = yf.download(f"{ticker_name}.JK", period="3mo", interval="1d", progress=False)
         df = clean_yf_dataframe(df)
+        if df is None or len(df) < 4: return None
         
-        # Ambil data dividen terakhir
-        divs = stock.dividends
-        last_div = float(divs.iloc[-1]) if not divs.empty else 0.0
-        div_date = divs.index[-1].strftime('%d-%m-%Y') if not divs.empty else "-"
-
-        df['EMA9'] = ta.ema(df['Close'], length=9)
+        # Indikator
         df['EMA20'] = ta.ema(df['Close'], length=20)
-        df['MA50'] = ta.sma(df['Close'], length=50)
-        df['VWAP'] = ta.vwap(df['High'], df['Low'], df['Close'], df['Volume'])
-        df['RSI'] = ta.rsi(df['Close'], length=14)
-        df['Vol_MA20'] = df['Volume'].rolling(window=20).mean()
-        
         last_price = float(df['Close'].iloc[-1])
-        # ... (Logika perhitungan lainnya sama)
+        
+        # Logika Sederhana untuk Simulasi
+        change_pct = ((last_price - float(df['Close'].iloc[-2])) / float(df['Close'].iloc[-2])) * 100
         
         return {
-            "Ticker": ticker.replace(".JK", ""),
+            "Ticker": ticker_name,
             "Price": last_price,
-            "Net Foreign Avg": round(( ( ( (df['Volume'].iloc[-1] * last_price) / 1_000_000_000 ) * 0.5) / 2), 2),
-            "Dividen Terakhir": f"Rp {last_div:,.0f} ({div_date})",
-            "Actionable": "⏳ Wait / Neutral", # Placeholder
-            # ... tambahkan sisa field agar sesuai
+            "Change %": round(change_pct, 2),
+            "Net Foreign Avg": 0.0, # Placeholder
+            "Dividen Terakhir": get_latest_dividend(ticker_name),
+            "Actionable": "⏳ Wait / Neutral"
         }
     except: return None
 
-# --- 5. INTERFACE PANEL UTAMA ---
-st.markdown("<h1 class='main-title'>📈 Swing Trading & Scalper Radar</h1>", unsafe_allow_html=True)
+def run_mega_scanner(ticker_list):
+    results = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        futures = {executor.submit(analyze_market_momentum, t): t for t in ticker_list}
+        for future in concurrent.futures.as_completed(futures):
+            res = future.result()
+            if res: results.append(res)
+    return pd.DataFrame(results)
 
-# ... (Kode chart IHSG sama)
+# --- 5. INTERFACE ---
+st.markdown("<h1 class='main-title'>📈 Swing Trading Radar</h1>", unsafe_allow_html=True)
 
-if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"): st.cache_data.clear()
-
-saham_pilihan = st.sidebar.multiselect("Pilih Saham:", options=master_tickers_clean, default=["ESIP","ESSA","TLKM"])
+saham_pilihan = st.multiselect("Pilih Saham:", options=master_tickers_clean, default=["BBCA", "BBRI", "ESIP", "ESSA"])
 
 if len(saham_pilihan) > 0:
     df_radar = run_mega_scanner(saham_pilihan)
     
     if not df_radar.empty:
-        # Konfigurasi format tampilan tabel
-        column_order = ["Ticker", "Price", "Net Foreign Avg", "Dividen Terakhir"] # Pastikan urutan ini
-        st.dataframe(df_radar[column_order], use_container_width=True)
+        # Reorder kolom agar Dividen di sebelah Net Foreign Avg
+        cols = df_radar.columns.tolist()
+        if "Net Foreign Avg" in cols and "Dividen Terakhir" in cols:
+            idx = cols.index("Net Foreign Avg")
+            cols.insert(idx + 1, cols.pop(cols.index("Dividen Terakhir")))
+            df_radar = df_radar[cols]
+        
+        st.dataframe(df_radar, use_container_width=True)
