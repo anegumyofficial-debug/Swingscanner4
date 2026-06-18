@@ -325,10 +325,9 @@ if len(saham_pilihan) > 0:
         df_radar = run_mega_scanner(saham_pilihan)
     
     if not df_radar.empty:
-        # 1. GENERATE INSIGHT
+        # 1. GENERATE INSIGHT & FILTERING
         df_radar['Kesimpulan'] = df_radar.apply(generate_insight, axis=1)
         
-        # 2. FILTERING
         if filter_mode == "Hanya Sinyal BUY / SUPER BUY":
             df_radar = df_radar[df_radar["Actionable"].str.contains("BUY")]
         elif filter_mode == "Hanya Struktur Up-Trend":
@@ -336,12 +335,20 @@ if len(saham_pilihan) > 0:
             
         df_radar = df_radar.sort_values(by=["Dana Masuk %", "Net Foreign Avg"], ascending=[False, False])
         
-        # 3. REORDER KOLOM
-        cols = ['Ticker', 'Price', 'Net Foreign Avg', 'Nilai Dividen', 'Cum Date', 'Kesimpulan'] + \
-               [c for c in df_radar.columns if c not in ['Ticker', 'Price', 'Net Foreign Avg', 'Nilai Dividen', 'Cum Date', 'Kesimpulan']]
-        df_radar = df_radar[cols]
+        # 2. RENDER RINGKASAN DANA
+        avg_masuk = float(df_radar["Dana Masuk %"].mean())
+        avg_keluar = 100.0 - avg_masuk
+        st.markdown(f"""
+        <div class='card-dana'>
+            <div style='display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 5px;'>
+                <span style='color: #4ADE80;'>🟢 Rata-rata Dana Masuk: {avg_masuk:.1f}%</span>
+                <span style='color: #F87171;'>🔴 Rata-rata Dana Keluar: {avg_keluar:.1f}%</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.progress(avg_masuk / 100.0)
 
-        # 4. FUNGSI STYLING
+        # 3. FUNGSI STYLE & RENDER TABEL
         def style_radar_rows(row):
             styles = [''] * len(row)
             try:
@@ -353,20 +360,21 @@ if len(saham_pilihan) > 0:
             except: pass
             return styles
 
-        # 5. RENDER TABEL
         styled_df = df_radar.style.apply(style_radar_rows, axis=1).format({
             "Price": "Rp {:,.0f}", "VWAP Baseline": "Rp {:,.0f}", "Prediksi Harga": "Rp {:,.0f}",
             "Dana Masuk %": "{:.1f}%", "Dana Keluar %": "{:.1f}%", "Net Foreign Avg": "{:.2f} B"
         })
+        st.dataframe(styled_df, use_container_width=True, height=520)
+
+        # 4. TABEL PANDUAN
+        st.markdown("### 🎯 Panduan Eksekusi")
+        # ... (letakkan kode tabel panduan Anda di sini) ...
         
-        # 6. RENDER RINGKASAN DANA
-        avg_masuk = float(df_radar["Dana Masuk %"].mean())
-        st.markdown(f"""<div class='card-dana'>🟢 Rata-rata Dana Masuk: {avg_masuk:.1f}%</div>""", unsafe_allow_html=True)
-        st.progress(avg_masuk / 100.0)
-        
-        # ... [TABEL PANDUAN STRATEGI TETAP SAMA] ...
     else:
-        st.warning("⚠️ Tidak ada emiten yang lolos kriteria.")        
+        st.warning("⚠️ Tidak ada emiten yang lolos kriteria.")
+else:
+    st.info("👋 Silakan pilih atau tambahkan minimal 1 kode emiten pada sidebar."
+            
         # --- LOGIKA REORDER KOLOM ---
         cols = list(df_radar.columns)
         if "Nilai Dividen" in cols and "Cum Date" in cols and "Net Foreign Avg" in cols:
