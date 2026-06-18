@@ -5,21 +5,27 @@ import pandas_ta as ta
 from datetime import datetime
 import pytz  
 import concurrent.futures
-@st.cache_data(ttl=86400)
-def get_dividend_info(ticker):
+
+@st.cache_data(ttl=86400) # Cache selama 24 jam
+def get_last_dividend_info(ticker):
     try:
-        stock = yf.Ticker(ticker if ".JK" in ticker else f"{ticker}.JK")
+        stock = yf.Ticker(f"{ticker}.JK")
         divs = stock.dividends
         if divs.empty:
-            return None, None
+            return {"Nilai": "0", "Cum Date": "N/A"}
         
-        # Mengambil dividen terakhir
-        last_div_val = divs.iloc[-1]
-        last_div_date = divs.index[-1].strftime('%d-%m-%Y')
-        return last_div_val, last_div_date
+        # Mengambil data terakhir
+        last_date = divs.index[-1]
+        last_val = divs.iloc[-1]
+        
+        # Menghitung estimasi Cum Date (Biasanya 1 hari sebelum Ex-Date)
+        # Catatan: Ini adalah pendekatan teknis, data riil bisa bervariasi sesuai KSEI
+        return {
+            "Nilai": f"Rp {last_val:,.0f}",
+            "Ex-Date": last_date.strftime('%d-%m-%Y')
+        }
     except:
-        return None, None
-        
+        return {"Nilai": "-", "Ex-Date": "-"}        
 # --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Swing & Scalper Dashboard BEI", layout="wide", page_icon="📈")
 
@@ -227,8 +233,8 @@ def analyze_market_momentum(ticker):
             "Est For Sell (S)": round(est_foreign_sell, 2),
             "Net Foreign (B)": round(net_foreign_b, 2),
             "Net Foreign Avg": round(net_foreign_avg, 2),
-            "Nilai Dividen": f"Rp {div_val:,.0f}" if div_val else "-",
-            "Cum Date": div_date if div_date else "-"
+            "Div Nilai": div_info["Nilai"],   
+            "Div Ex-Date": div_info["Ex-Date"]       
         }
     except:
         return None
@@ -392,8 +398,8 @@ if len(saham_pilihan) > 0:
                                           "Est For Sell (S)": "{:.2f} B",
                                           "Net Foreign (B)": "{:+.2f} B",
                                           "Net Foreign Avg": "{:.2f} B",
-                                          "Nilai Dividen": "{}", 
-                                          "Cum Date": "{}"
+                                          "Div Nilai": "{}",  
+                                          "Div Ex-Date": "{}"
                                       })
             st.dataframe(styled_df, use_container_width=True, height=520)
         
