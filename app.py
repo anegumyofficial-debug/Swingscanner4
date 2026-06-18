@@ -5,8 +5,6 @@ import pandas_ta as ta
 from datetime import datetime
 import pytz  
 import concurrent.futures
-
-# --- FUNGSI BARU: Mengambil Data Dividen ---
 @st.cache_data(ttl=86400)
 def get_dividend_info(ticker):
     try:
