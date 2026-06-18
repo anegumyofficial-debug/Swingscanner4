@@ -358,8 +358,7 @@ if len(saham_pilihan) > 0:
             "Price": "Rp {:,.0f}", "VWAP Baseline": "Rp {:,.0f}", "Prediksi Harga": "Rp {:,.0f}",
             "Dana Masuk %": "{:.1f}%", "Dana Keluar %": "{:.1f}%", "Net Foreign Avg": "{:.2f} B"
         })
-        st.dataframe(styled_df, use_container_width=True, height=520)
-
+        
         # 6. RENDER RINGKASAN DANA
         avg_masuk = float(df_radar["Dana Masuk %"].mean())
         st.markdown(f"""<div class='card-dana'>🟢 Rata-rata Dana Masuk: {avg_masuk:.1f}%</div>""", unsafe_allow_html=True)
