@@ -485,5 +485,7 @@ if len(saham_pilihan) > 0:
         * **Istirahat Siang (11:30 - 12:00):** Waktu terbaik untuk mengamati apakah akumulasi berlanjut. Jika harga bertahan di atas VWAP, posisi cukup aman untuk di-*hold*.
         * **Menjelang Penutupan (15:45 - 16:00):** Paling ideal untuk *Swing Trader*. Jika sinyal 'SUPER BUY' muncul di menit-menit akhir, probabilitas kenaikan besok pagi sangat tinggi.
         """)
-        
+else:
+        st.warning("⚠️ Tidak ada emiten dari daftar Anda yang lolos kriteria filter saat ini.")
+else:
     st.info("👋 Silakan pilih atau tambahkan minimal 1 kode emiten pada kolom sidebar untuk memulai radar.")
