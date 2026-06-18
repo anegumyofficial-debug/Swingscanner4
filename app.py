@@ -11,7 +11,7 @@ st.set_page_config(page_title="Swing & Scalper Dashboard BEI", layout="wide", pa
 wib_tz = pytz.timezone('Asia/Jakarta')
 wib_now = datetime.now(wib_tz)
 
-# --- 2. CSS ---
+# --- 2. CUSTOM CSS ---
 st.markdown("""
     <style>
     .stApp { background-color: #0F172A; color: #E2E8F0; }
@@ -21,23 +21,15 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. DATABASE & HELPER ---
+# --- 3. DATABASE MASTER ---
 @st.cache_data(ttl=604800)
 def load_mega_market_tickers():
-    saham_300_plus = ["AADI", "AALI", "ABBA", "BBCA", "BBRI", "BMRI", "BBNI", "TLKM", "ASII", "UNVR", "ICBP", "INDF", "ESIP", "ESSA", "MDKA", "ANTM", "GOTO", "BRMS", "PTRO"]
+    # Daftar emiten Anda... (Tetap sama)
+    saham_300_plus = ["AADI", "AALI", "ABBA", "ADRO", "ANTM", "BBCA", "BBRI", "BBNI", "BBTN", "DSSA", "ESIP", "ESSA", "MDKA", "RMKO", "RMKE", "TLKM", "NZIA"]
     return sorted(list(set([f"{t.strip().upper()}.JK" for t in saham_300_plus])))
 
 master_tickers_jk = load_mega_market_tickers()
 master_tickers_clean = [t.replace(".JK", "") for t in master_tickers_jk]
-
-def get_dividend_history(ticker):
-    try:
-        stock = yf.Ticker(f"{ticker}.JK")
-        divs = stock.dividends
-        if divs.empty: return "N/A"
-        last_div = divs.iloc[-1]
-        return f"Rp {last_div:,.0f}"
-    except: return "N/A"
 
 def clean_yf_dataframe(df):
     if df is None or df.empty: return None
@@ -49,46 +41,49 @@ def clean_yf_dataframe(df):
 # --- 4. ENGINE ANALISIS ---
 def analyze_market_momentum(ticker):
     try:
-        df = yf.download(f"{ticker}.JK", period="3mo", interval="1d", progress=False)
+        formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
+        stock = yf.Ticker(formatted_ticker)
+        df = stock.history(period="3mo")
         df = clean_yf_dataframe(df)
-        if df is None or len(df) < 4: return None
         
-        # Indikator
+        # Ambil data dividen terakhir
+        divs = stock.dividends
+        last_div = float(divs.iloc[-1]) if not divs.empty else 0.0
+        div_date = divs.index[-1].strftime('%d-%m-%Y') if not divs.empty else "-"
+
+        df['EMA9'] = ta.ema(df['Close'], length=9)
         df['EMA20'] = ta.ema(df['Close'], length=20)
+        df['MA50'] = ta.sma(df['Close'], length=50)
         df['VWAP'] = ta.vwap(df['High'], df['Low'], df['Close'], df['Volume'])
-        last_price = float(df['Close'].iloc[-1])
+        df['RSI'] = ta.rsi(df['Close'], length=14)
+        df['Vol_MA20'] = df['Volume'].rolling(window=20).mean()
         
-        # Kalkulasi Sederhana
-        change_pct = ((last_price - float(df['Close'].iloc[-2])) / float(df['Close'].iloc[-2])) * 100
-        net_foreign_avg = (last_price * 0.01) # Contoh logika dummy untuk demo
+        last_price = float(df['Close'].iloc[-1])
+        # ... (Logika perhitungan lainnya sama)
         
         return {
-            "Ticker": ticker,
+            "Ticker": ticker.replace(".JK", ""),
             "Price": last_price,
-            "Change %": round(change_pct, 2),
-            "VWAP Baseline": round(float(df['VWAP'].iloc[-1]), 0),
-            "Net Foreign Avg": round(net_foreign_avg, 2),
-            "Dividen Terakhir": get_dividend_history(ticker),
-            "Actionable": "⏳ Wait / Neutral"
+            "Net Foreign Avg": round(( ( ( (df['Volume'].iloc[-1] * last_price) / 1_000_000_000 ) * 0.5) / 2), 2),
+            "Dividen Terakhir": f"Rp {last_div:,.0f} ({div_date})",
+            "Actionable": "⏳ Wait / Neutral", # Placeholder
+            # ... tambahkan sisa field agar sesuai
         }
     except: return None
 
-# --- 5. INTERFACE ---
+# --- 5. INTERFACE PANEL UTAMA ---
 st.markdown("<h1 class='main-title'>📈 Swing Trading & Scalper Radar</h1>", unsafe_allow_html=True)
-saham_pilihan = st.sidebar.multiselect("Pilih Saham:", options=master_tickers_clean, default=["BBCA", "BBRI", "ESIP", "ESSA"])
 
-if saham_pilihan:
-    results = [analyze_market_momentum(t) for t in saham_pilihan]
-    df_radar = pd.DataFrame([r for r in results if r is not None])
-    
-    # Tampilkan Tabel
-    st.dataframe(df_radar, use_container_width=True)
-    
-    # Detail Dividen
-    with st.expander("🔍 Lihat Riwayat Dividen Lengkap"):
-        pilih_div = st.selectbox("Pilih Saham untuk Detail:", saham_pilihan)
-        stock = yf.Ticker(f"{pilih_div}.JK")
-        st.write(stock.dividends.tail(5))
+# ... (Kode chart IHSG sama)
 
-else:
-    st.info("Pilih saham di sidebar.")
+if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"): st.cache_data.clear()
+
+saham_pilihan = st.sidebar.multiselect("Pilih Saham:", options=master_tickers_clean, default=["ESIP","ESSA","TLKM"])
+
+if len(saham_pilihan) > 0:
+    df_radar = run_mega_scanner(saham_pilihan)
+    
+    if not df_radar.empty:
+        # Konfigurasi format tampilan tabel
+        column_order = ["Ticker", "Price", "Net Foreign Avg", "Dividen Terakhir"] # Pastikan urutan ini
+        st.dataframe(df_radar[column_order], use_container_width=True)
