@@ -303,7 +303,7 @@ with st.sidebar:
     saham_pilihan = st.multiselect(
         "Kustom Pilih / Ketik Kode Saham Tambahan:",
         options=master_tickers_clean,
-        default=["Suli,ASJT"])
+        default=["Suli","ASJT"])
 
 # RENDERING TABEL UTAMA & METRIK PERSENTASE DANA
 if len(saham_pilihan) > 0:
