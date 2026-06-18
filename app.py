@@ -86,6 +86,21 @@ def clean_yf_dataframe(df):
     df.columns = [str(col).strip() for col in df.columns]
     return df
 
+@st.cache_data(ttl=86400)
+def get_dividend_data(ticker):
+    try:
+        formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
+        stock = yf.Ticker(formatted_ticker)
+        divs = stock.dividends
+        if divs.empty:
+            return None
+        div_df = divs.tail(5).reset_index()
+        div_df.columns = ['Tanggal Ex-Div', 'Dividen (Rp)']
+        div_df['Tanggal Ex-Div'] = div_df['Tanggal Ex-Div'].dt.strftime('%d-%m-%Y')
+        return div_df
+    except:
+        return None
+
 # --- 4. ENGINE ANALISIS UTAMA ---
 def analyze_market_momentum(ticker):
     try:
@@ -293,7 +308,7 @@ with st.sidebar:
     saham_pilihan = st.multiselect(
         "Kustom Pilih / Ketik Kode Saham Tambahan:",
         options=master_tickers_clean,
-        default=["ASJT","SULI","ANTM","TLKM","GOTO","DSSA"])
+        default=["NZIA","ESIP","ESSA","TLKM","AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR", "GGRM", "SGRO","HRTA","BRMS","BUVA","CPIN","ADRO","BUMI","PTRO","ENRG","JPFA","FILM","MYOR","NCKL","BELI","ULTJ","DSSA","IRSX", "WIFI","MDKA","RMKO","RMKE", "KLBV", "TMPO"])
 
 # RENDERING TABEL UTAMA & METRIK PERSENTASE DANA
 if len(saham_pilihan) > 0:
@@ -379,7 +394,17 @@ if len(saham_pilihan) > 0:
                                       })
             st.dataframe(styled_df, use_container_width=True, height=520)
         
-        # --- 6. TABEL REKOMENDASI STRATEGI ---
+        # --- 6. TABEL DIVIDEN (INTEGRASI) ---
+        st.markdown("### 💰 Riwayat Pembagian Dividen")
+        saham_div = st.selectbox("Pilih Saham untuk Cek Dividen:", options=saham_pilihan)
+        if st.button("Lihat Riwayat Dividen"):
+            div_data = get_dividend_data(saham_div)
+            if div_data is not None:
+                st.table(div_data)
+            else:
+                st.write(f"Data dividen untuk {saham_div} tidak tersedia.")
+
+        # --- 7. TABEL REKOMENDASI STRATEGI ---
         st.markdown("### 🎯 Panduan Eksekusi: Probabilitas & Waktu Ideal Serok")
         data_panduan = {
             "Kategori Sinyal": ["🔥 SUPER BUY", "🎯 BUY (Oversold)", "⏳ Wait / Neutral", "🚨 RISK (Jenuh Beli)"],
