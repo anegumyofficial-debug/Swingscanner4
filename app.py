@@ -303,7 +303,7 @@ with st.sidebar:
     saham_pilihan = st.multiselect(
         "Kustom Pilih / Ketik Kode Saham Tambahan:",
         options=master_tickers_clean,
-        default=["NZIA","ESIP","ESSA","TLKM"])
+        default=["NZIA","ESIP","ESSA","TLKM","BCIC","PPRE"])
 
 # RENDERING TABEL UTAMA & METRIK PERSENTASE DANA
 if len(saham_pilihan) > 0:
