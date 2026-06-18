@@ -7,20 +7,20 @@ import pytz
 import concurrent.futures
 
 # --- FUNGSI BARU: Mengambil Data Dividen ---
-@st.cache_data(ttl=86400) # Cache selama 1 hari agar tidak memberatkan loading
-def get_latest_dividends(ticker):
+@st.cache_data(ttl=86400)
+def get_dividend_info(ticker):
     try:
-        formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
-        stock = yf.Ticker(formatted_ticker)
+        stock = yf.Ticker(ticker if ".JK" in ticker else f"{ticker}.JK")
         divs = stock.dividends
         if divs.empty:
-            return "N/A"
-        # Mengambil data dividen terakhir
-        last_div_date = divs.index[-1].strftime('%d-%m-%y')
+            return None, None
+        
+        # Mengambil dividen terakhir
         last_div_val = divs.iloc[-1]
-        return f"{last_div_val:,.0f} ({last_div_date})"
+        last_div_date = divs.index[-1].strftime('%d-%m-%Y')
+        return last_div_val, last_div_date
     except:
-        return "N/A"
+        return None, None
         
 # --- 1. KONFIGURASI HALAMAN ---
 st.set_page_config(page_title="Swing & Scalper Dashboard BEI", layout="wide", page_icon="📈")
@@ -229,7 +229,8 @@ def analyze_market_momentum(ticker):
             "Est For Sell (S)": round(est_foreign_sell, 2),
             "Net Foreign (B)": round(net_foreign_b, 2),
             "Net Foreign Avg": round(net_foreign_avg, 2),
-            "Dividen": get_latest_dividends(ticker_name)
+            "Nilai Dividen": f"Rp {div_val:,.0f}" if div_val else "-",
+            "Cum Date": div_date if div_date else "-"
         }
     except:
         return None
@@ -393,7 +394,8 @@ if len(saham_pilihan) > 0:
                                           "Est For Sell (S)": "{:.2f} B",
                                           "Net Foreign (B)": "{:+.2f} B",
                                           "Net Foreign Avg": "{:.2f} B",
-                                          "Dividen": "{}"
+                                          "Nilai Dividen": "{}", 
+                                          "Cum Date": "{}"
                                       })
             st.dataframe(styled_df, use_container_width=True, height=520)
         
