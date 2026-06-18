@@ -6,6 +6,22 @@ from datetime import datetime
 import pytz  
 import concurrent.futures
 
+# --- FUNGSI Insight ---
+def generate_insight(row):
+    # Logika kombinasi teknikal, bandarmologi, dan dividen
+    if "SUPER BUY" in str(row['Actionable']):
+        return "🔥 REKOMENDASI: Akumulasi (Sinyal & Trend Kuat)"
+    elif "BUY" in str(row['Actionable']):
+        return "🎯 REKOMENDASI: Buy on Weakness / Entry"
+    elif row['Net Foreign (B)'] < -5.0:
+        return "🚨 WASPADA: Distribusi Asing Besar"
+    elif row['Net Foreign (B)'] > 5.0 and row['Price'] > row['VWAP Baseline']:
+        return "🚀 BULLISH: Dominasi Asing & Trend"
+    elif "N/A" != row['Nilai Dividen'] and row['Actionable'] == "⏳ Wait / Neutral":
+        return "💡 DIVIDEN: Pantau Cum Date"
+    else:
+        return "⏳ NEUTRAL: Wait & See"
+
 # --- FUNGSI TAMBAHAN DIVIDEN ---
 @st.cache_data(ttl=86400)
 def get_dividend_info(ticker):
@@ -322,6 +338,23 @@ if len(saham_pilihan) > 0:
         df_radar = run_mega_scanner(saham_pilihan)
     
     if not df_radar.empty:
+        # 1. Jalankan fungsi insight untuk setiap baris
+        df_radar['Kesimpulan'] = df_radar.apply(generate_insight, axis=1)
+        
+        # 2. Reorder kolom agar Kesimpulan ada di urutan yang tepat
+        cols = list(df_radar.columns)
+        if "Nilai Dividen" in cols and "Cum Date" in cols and "Kesimpulan" in cols:
+            # Pindahkan posisi kolom sesuai urutan yang diinginkan
+            new_order = ['Ticker', 'Price', 'Net Foreign Avg', 'Nilai Dividen', 'Cum Date', 'Kesimpulan']
+            # Tambahkan sisa kolom yang belum ada di daftar new_order
+            for c in cols:
+                if c not in new_order: new_order.append(c)
+            df_radar = df_radar[new_order]
+
+        # 3. Tampilkan tabel dengan styling
+        # ... (Gunakan kode styled_df Anda di sini)
+        st.dataframe(styled_df, use_container_width=True, height=520)
+        
         # --- LOGIKA REORDER KOLOM ---
         cols = list(df_radar.columns)
         if "Nilai Dividen" in cols and "Cum Date" in cols and "Net Foreign Avg" in cols:
