@@ -164,374 +164,189 @@ def analyze_scalping_momentum(ticker):
 
             else:
                 direction = "📈 UP MOMENTUM (Koleksi)"
-
             stop_loss_est = round(min(last_vwap, last_ema), 0)
-
             risk_distance = max(last_price - stop_loss_est, last_price * 0.01)
-
             take_profit_est = round(last_price + (risk_distance * 1.5), 0)
-
-            
 
         elif last_price > last_vwap and last_k > last_d:
-
             direction = "📈 UP MOMENTUM (Koleksi)"
-
             stop_loss_est = round(last_vwap, 0)
-
             risk_distance = max(last_price - stop_loss_est, last_price * 0.01)
-
             take_profit_est = round(last_price + (risk_distance * 1.5), 0)
-
-            
 
         elif last_price < last_ema and last_k < last_d and last_k > 65:
-
             direction = "🚨 DUMP RISK (Jangan Haka)"
-
             stop_loss_est = round(last_price * 0.99, 0)
-
             take_profit_est = 0
-
-            
 
         elif last_price < last_vwap:
-
             direction = "📉 DOWN (Hindari)"
-
             stop_loss_est = 0
-
             take_profit_est = 0
 
         else:
-
             direction = "⏳ SIDEWAYS (Wait)"
-
             stop_loss_est = round(last_price * 0.99, 0)
-
             take_profit_est = round(last_price * 1.02, 0)
 
-            
-
         # Catatan Penanda jika data beralih ke mode penutupan harian
-
         if is_fallback:
-
             direction += " [Hari Kemarin]"
 
-
-
         # Logika Arah & Momentum
-
         if last_price > last_vwap and last_k > last_d and last_k < 50:
-
             direction = "🚀 STRONG UP (Siap Buy)"
-
             status_sinyal = "BUY"
-
         elif last_price > last_vwap and last_k > last_d:
-
             direction = "📈 UP MOMENTUM (Koleksi)"
-
             status_sinyal = "HOLD"
-
         elif last_k < last_d and last_k > 65:
-
             direction = "🚨 DUMP RISK"
-
             status_sinyal = "SELL"
-
         else:
-
             direction = "⏳ SIDEWAYS"
-
             status_sinyal = "WAIT"
-
-
-
+            
         # Analisis Momentum
-
         if last_k > 80: momentum = "🔥 Overbought"
-
         elif last_k < 20: momentum = "🧊 Oversold"
-
         elif last_k > last_d: momentum = "📈 Bullish"
-
         else: momentum = "📉 Bearish"
 
-
-
         # --- MODIFIKASI LOGIKA ESTIMASI ARAH & VALIDASI VOLUME ---
-
         # Definisi status dasar
-
         is_strong_up = (last_price > last_vwap) and (last_price > last_ema) and (last_k > last_d) and (last_k < 50)
-
-        
-
         if is_strong_up and is_volume_spike and is_highly_liquid:
 
             direction = "🚀 STRONG UP (Siap Buy - Volume Spike!)"
-
             status_sinyal = "BUY"
-
             stop_loss_est = round(min(last_vwap, last_ema), 0)
-
             risk_distance = max(last_price - stop_loss_est, last_price * 0.01)
-
             take_profit_est = round(last_price + (risk_distance * 1.5), 0)
-
-            
 
         elif last_price > last_vwap and last_k > last_d:
-
             direction = "📈 UP MOMENTUM (Koleksi)"
-
             status_sinyal = "HOLD"
-
             stop_loss_est = round(last_vwap, 0)
-
             risk_distance = max(last_price - stop_loss_est, last_price * 0.01)
-
             take_profit_est = round(last_price + (risk_distance * 1.5), 0)
-
             
-
         elif last_k < last_d and last_k > 65:
-
             direction = "🚨 DUMP RISK (Jangan Haka)"
-
             status_sinyal = "SELL"
-
             stop_loss_est = round(last_price * 0.99, 0)
-
             take_profit_est = 0
 
-            
-
         elif last_price < last_vwap:
-
             direction = "📉 DOWN (Hindari)"
-
             status_sinyal = "WAIT"
-
             stop_loss_est = 0
-
             take_profit_est = 0
 
         else:
-
             direction = "⏳ SIDEWAYS (Wait)"
-
             status_sinyal = "WAIT"
-
             stop_loss_est = round(last_price * 0.99, 0)
-
             take_profit_est = round(last_price * 1.02, 0)
 
         return {
-
             "Ticker": ticker_name,
-
             "Live Price": last_price,
-
             "Change %": round(change_pct, 2),
-
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
-
             "VWAP/MA Baseline": round(last_vwap, 0),
-
             "Stoch %K": round(last_k, 2),
-
             "Stoch %D": round(last_d, 2),
-
             "Est. Arah": direction,
-
             "Proteksi Stop Loss": stop_loss_est,
-
             "Estimasi Take Profit": take_profit_est,
-
             "Momentum": momentum,
-
             "Status Sinyal": status_sinyal
-
         }
 
     except:
-
         return None
-
-
-
 def run_scalper_scanner(ticker_list):
-
     results = []
-
     with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
-
         future_to_ticker = {executor.submit(analyze_scalping_momentum, t): t for t in ticker_list}
-
         for future in concurrent.futures.as_completed(future_to_ticker):
-
             res = future.result()
-
             if res is not None:
-
                 results.append(res)
-
     return pd.DataFrame(results)
 
-    
-
 st.write(f"⏰ Jam Sinkronisasi Terakhir: **{wib_now.strftime('%d-%m-%Y %H:%M:%S')} WIB** (Zona Waktu Terkunci Asia/Jakarta)")
-
 if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"):
-
     st.cache_data.clear()
 
-    
-
 # --- 5. INTERFACE PANEL KONTROL & SIDEBAR ---
-
 st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro (Sinyal Siap Buy & Target TP/SL)</h1>", unsafe_allow_html=True)
 
-
-
 # Panggil fungsi sentimen
-
 sentiment, color = get_ihsg_sentiment()
 
-
-
 # PERBAIKAN: Menambahkan argumen (3) agar streamlit tahu ada 3 kolom
-
 col_title1, col_title2, col_title3 = st.columns(3) 
-
-
-
 with col_title1:
-
     st.write(f"⏰ Sinkron: {datetime.now().strftime('%H:%M:%S')} WIB")
-
 with col_title2:
-
     st.markdown(f"**Market Sentiment (IHSG):** <span style='color:{color}'>{sentiment}</span>", unsafe_allow_html=True)
-
 with col_title3:
-
     if st.button("🔄 Refresh Data", use_container_width=True):
-
         st.cache_data.clear()
-
         st.rerun()
-
-        
-
 with st.sidebar:
-
     st.header("⚙️ Filter Validasi Pasar")
-
     only_ready_to_buy = st.checkbox("🎯 Hanya Tampilkan Sinyal SIAP BUY", value=False)
-
     st.markdown("---")
 
     saham_pilihan = st.multiselect(
-
         "Pilih Emiten Pantauan:", 
-
         options=master_tickers_clean, 
-
         default=["NZIA","ESIP","ESSA","TLKM","AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR", "GGRM", "SGRO","HRTA","BRMS","BUVA","CPIN","ADRO","BUMI","PTRO","ENRG","JPFA","FILM","MYOR","NCKL","BELI","ULTJ","DSSA","IRSX", "WIFI","MDKA","RMKO","RMKE", "KLBV", "TMPO"])
 
-
-
 if len(saham_pilihan) > 0:
-
     df_scalp = run_scalper_scanner(saham_pilihan)
-
-    
-
     if not df_scalp.empty:
-
         if only_ready_to_buy:
-
             df_scalp = df_scalp[df_scalp["Est. Arah"].str.contains("STRONG UP|UP MOMENTUM")]
-
-        
-
         df_scalp = df_scalp.sort_values(by="Change %", ascending=False)
 
-        
-
         def style_scalper(row):
-
             styles = [''] * len(row)
-
             arah = str(row['Est. Arah'])
-
             idx_arah = row.index.get_loc('Est. Arah')
-
             idx_sl = row.index.get_loc('Proteksi Stop Loss')
-
             idx_tp = row.index.get_loc('Estimasi Take Profit')
 
-            
-
             if "STRONG UP" in arah:
-
                 styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
-
                 styles[idx_tp] = 'color: #34D399; font-weight: bold;'
-
             elif "UP MOMENTUM" in arah:
-
                 styles[idx_arah] = 'background-color: #065F46; color: #A7F3D0;'
-
                 styles[idx_tp] = 'color: #34D399;'
 
             elif "DUMP RISK" in arah:
-
                 styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
-
                 styles[idx_sl] = 'color: #F87171; font-weight: bold;'
-
             return styles
-
-
-
         if not df_scalp.empty:
-
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
             .format({
-
                                           "Live Price": "Rp {:,.0f}",
-
                                           "Change %": "{:+.2f}%",
-
                                           "Turnover (B)": "{:,.2f} B",
-
                                           "VWAP/MA Baseline": "Rp {:,.0f}",
-
                                           "Stoch %K": "{:.2f}",
-
                                           "Stoch %D": "{:.2f}",
-
                                           "Proteksi Stop Loss": "Rp {:,.0f}",
-
                                           "Estimasi Take Profit": "Rp {:,.0f}"
-
                                       })
 
-            
-
             st.dataframe(styled_df, use_container_width=True, height=450)
-
         else:
-
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
-
-            
-
         st.markdown("""
 
         ### 💡 Aturan Pembacaan Dashboard Adaptif:
@@ -545,4 +360,3 @@ if len(saham_pilihan) > 0:
     else:
 
         st.error("Gagal menarik data pasar dari Yahoo Finance. Silakan coba tekan tombol refresh di atas beberapa saat lagi.") 
-
