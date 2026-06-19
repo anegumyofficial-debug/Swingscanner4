@@ -1,4 +1,3 @@
-logic sudah bagus, supaya lebih dapat transparan data perlu penambahan tabel data : dana masuk % , Dana keluar % , Est Foreign Buy (B) , est foreign Sell (s), Net Foreign (B) , Net Foreign AVG , tambahkan dalam kode ini  : import streamlit as st
 import pandas as pd
 import yfinance as yf
 import pandas_ta as ta
