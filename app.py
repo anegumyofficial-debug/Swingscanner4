@@ -107,7 +107,12 @@ def get_ihsg_sentiment():
 def analyze_scalping_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
-        
+
+# Tambahkan ini di dalam except pada analyze_scalping_momentum
+except Exception as e:
+    # st.write(f"Error pada {ticker}: {e}") # Aktifkan ini untuk melihat error
+    return None
+
         # Mode Utama: Coba ambil data intraday 5 menit terlebih dahulu
         df = yf.download(formatted_ticker, period="3d", interval="5m", progress=False)
         df = clean_yf_dataframe(df)
@@ -293,7 +298,7 @@ def analyze_scalping_momentum(ticker):
 
 def run_scalper_scanner(ticker_list):
     results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         future_to_ticker = {executor.submit(analyze_scalping_momentum, t): t for t in ticker_list}
         for future in concurrent.futures.as_completed(future_to_ticker):
             res = future.result()
