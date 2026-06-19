@@ -90,7 +90,7 @@ def clean_yf_dataframe(df):
 @st.cache_data(ttl=900) # Update setiap 15 menit
 def get_ihsg_sentiment():
     try:
-        ihsg = yf.download("^JKSE", period="5d", progress=False)
+        ihsg = yf.download("^JKSE", period="5d", progress=False)
         ihsg = clean_yf_dataframe(ihsg)
         last_close = ihsg['Close'].iloc[-1]
         prev_close = ihsg['Close'].iloc[-2]
