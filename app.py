@@ -333,7 +333,7 @@ if len(saham_pilihan) > 0:
                                           "VWAP/MA Baseline": "Rp {:,.0f}",
                                           "Stoch %K": "{:.2f}",
                                           "Stoch %D": "{:.2f}",
-                                          "RSI (14)": "{:.2f},
+                                          "RSI (14)": "{:.2f}",
                                           "Proteksi Stop Loss": "Rp {:,.0f}",
                                           "Estimasi Take Profit": "Rp {:,.0f}",
                                           "Dana Masuk %": "{}",
