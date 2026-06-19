@@ -277,15 +277,16 @@ def analyze_scalping_momentum(ticker):
             "Stoch %D": round(last_d, 2),
             "Dana Masuk %": f"{dana_masuk_pct}%",
             "Dana Keluar %": f"{dana_keluar_pct}%",
-            "Est. Arah": direction,
             "Proteksi Stop Loss": stop_loss_est,
             "Estimasi Take Profit": take_profit_est,
             "Status Sinyal": status_sinyal,
-            "Net Foreign AVG": round((net_foreign_avg * last_price) / 1_000_000_000, 2),
             "Est Foreign Buy (B)": round((est_foreign_buy * last_price) / 1_000_000_000, 2),
             "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
             "Net Foreign (B)": round((net_foreign_val * last_price) / 1_000_000_000, 2),
-            "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2)
+            "Net Foreign AVG": round((net_foreign_avg * last_price) / 1_000_000_000, 2),
+            "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
+             "Est. Arah": direction,
+
                 }
     except:
         return None
@@ -367,7 +368,7 @@ if len(saham_pilihan) > 0:
                                           "Stoch %K": "{:.2f}",
                                           "Stoch %D": "{:.2f}",
                                           "Dana Masuk %": "{}",
-                                    "Dana Keluar %": "{}",
+                                          "Dana Keluar %": "{}",
                                           "Proteksi Stop Loss": "Rp {:,.0f}",
                                           "Estimasi Take Profit": "Rp {:,.0f}",
                                           "Est Foreign Buy (B)": "{:,.2f} B",
