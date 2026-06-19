@@ -85,7 +85,25 @@ def clean_yf_dataframe(df):
     df.columns = [str(col).strip() for col in df.columns]
     return df
 
+
 # --- 4. ENGINE ANALISIS INTERDAY SCALPING & VALIDASI FILTER ---
+@st.cache_data(ttl=900) # Update setiap 15 menit
+def get_ihsg_sentiment():
+    try:
+        ihsg = yf.download("^JKSE", period="5d", progress=False)
+        ihsg = clean_yf_dataframe(ihsg)
+        last_close = ihsg['Close'].iloc[-1]
+        prev_close = ihsg['Close'].iloc[-2]
+        trend = (last_close - prev_close) / prev_close * 100
+        
+        if trend > 0.1:
+            return "BULLISH 🟢", "#22C55E"
+        elif trend < -0.1:
+            return "BEARISH 🔴", "#EF4444"
+        else:
+            return "SIDEWAYS 🟡", "#EAB308"
+    except:
+        return "NEUTRAL ⚪", "#94A3B8"
 def analyze_scalping_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
@@ -263,13 +281,22 @@ if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"):
 # --- 5. INTERFACE PANEL KONTROL & SIDEBAR ---
 st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro (Sinyal Siap Buy & Target TP/SL)</h1>", unsafe_allow_html=True)
 
-col_title1, col_title2 = st.columns(2)
-with col_title1:
-    st.write(f"Terakhir Sinkron: {datetime.now().strftime('%H:%M:%S')} WIB")
-with col_title2:
-    if st.button("🔄 Tembak Refresh Data", use_container_width=True):
-        st.cache_data.clear()
+# --- 5. INTERFACE PANEL KONTROL & SIDEBAR ---
+st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro (Sinyal Siap Buy & Target TP/SL)</h1>", unsafe_allow_html=True)
 
+# Panggil fungsi sentimen
+sentiment, color = get_ihsg_sentiment()
+
+col_title1, col_title2, col_title3 = st.columns()
+with col_title1:
+    st.write(f"⏰ Sinkron: {datetime.now().strftime('%H:%M:%S')} WIB")
+with col_title2:
+    st.markdown(f"**Market Sentiment (IHSG):** <span style='color:{color}'>{sentiment}</span>", unsafe_allow_html=True)
+with col_title3:
+    if st.button("🔄 Refresh", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+        
 with st.sidebar:
     st.header("⚙️ Filter Validasi Pasar")
     only_ready_to_buy = st.checkbox("🎯 Hanya Tampilkan Sinyal SIAP BUY", value=False)
