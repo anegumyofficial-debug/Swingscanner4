@@ -85,34 +85,11 @@ def clean_yf_dataframe(df):
     df.columns = [str(col).strip() for col in df.columns]
     return df
 
-
 # --- 4. ENGINE ANALISIS INTERDAY SCALPING & VALIDASI FILTER ---
-@st.cache_data(ttl=900) # Update setiap 15 menit
-def get_ihsg_sentiment():
-    try:
-        ihsg = yf.download("^JKSE", period="5d", progress=False)
-        ihsg = clean_yf_dataframe(ihsg)
-        last_close = ihsg['Close'].iloc[-1]
-        prev_close = ihsg['Close'].iloc[-2]
-        trend = (last_close - prev_close) / prev_close * 100
-        
-        if trend > 0.1:
-            return "BULLISH 🟢", "#22C55E"
-        elif trend < -0.1:
-            return "BEARISH 🔴", "#EF4444"
-        else:
-            return "SIDEWAYS 🟡", "#EAB308"
-    except:
-        return "NEUTRAL ⚪", "#94A3B8"
 def analyze_scalping_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
-
-# Tambahkan ini di dalam except pada analyze_scalping_momentum
-except Exception as e:
-    # st.write(f"Error pada {ticker}: {e}") # Aktifkan ini untuk melihat error
-    return None
-
+        
         # Mode Utama: Coba ambil data intraday 5 menit terlebih dahulu
         df = yf.download(formatted_ticker, period="3d", interval="5m", progress=False)
         df = clean_yf_dataframe(df)
@@ -252,53 +229,26 @@ except Exception as e:
             status_sinyal = "WAIT"
             stop_loss_est = round(last_price * 0.99, 0)
             take_profit_est = round(last_price * 1.02, 0)
-        # --- ESTIMASI DATA ASING (PROKSI STATISTIK) ---
-        # Mengambil data 5 hari untuk rata-rata
-        df_5d = yf.download(formatted_ticker, period="5d", interval="1d", progress=False)
-        df_5d = clean_yf_dataframe(df_5d)
-        
-        # Proksi: Asumsi 35% dari volume adalah transaksi asing
-        avg_vol_5d = df_5d['Volume'].mean()
-        last_vol = float(df['Volume'].iloc[-1])
-        
-        est_foreign_buy = last_vol * 0.35 * 0.52  # 52% dari porsi asing adalah buy saat tren naik
-        est_foreign_sell = last_vol * 0.35 * 0.48 # 48% dari porsi asing adalah sell
-        net_foreign_val = est_foreign_buy - est_foreign_sell
-        
-        # Net Foreign Average (5 hari)
-        net_foreign_avg = (df_5d['Volume'] * 0.35 * 0.04).mean() # Estimasi rata-rata net 4% dari volume
-        
-        # --- LOGIKA PERSENTASE DANA ---
-        total_pressure = est_foreign_buy + est_foreign_sell
-        dana_masuk_pct = round((est_foreign_buy / total_pressure) * 100, 1)
-        dana_keluar_pct = round((est_foreign_sell / total_pressure) * 100, 1)
-
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
             "Change %": round(change_pct, 2),
+            "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "VWAP/MA Baseline": round(last_vwap, 0),
             "Stoch %K": round(last_k, 2),
             "Stoch %D": round(last_d, 2),
-            "Dana Masuk %": f"{dana_masuk_pct}%",
-            "Dana Keluar %": f"{dana_keluar_pct}%",
+            "Est. Arah": direction,
             "Proteksi Stop Loss": stop_loss_est,
             "Estimasi Take Profit": take_profit_est,
-            "Status Sinyal": status_sinyal,
-            "Est Foreign Buy (B)": round((est_foreign_buy * last_price) / 1_000_000_000, 2),
-            "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
-            "Net Foreign (B)": round((net_foreign_val * last_price) / 1_000_000_000, 2),
-            "Net Foreign AVG": round((net_foreign_avg * last_price) / 1_000_000_000, 2),
-            "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
-             "Est. Arah": direction,
-
-                }
+            "Momentum": momentum,
+            "Status Sinyal": status_sinyal
+        }
     except:
         return None
 
 def run_scalper_scanner(ticker_list):
     results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=15) as executor:
         future_to_ticker = {executor.submit(analyze_scalping_momentum, t): t for t in ticker_list}
         for future in concurrent.futures.as_completed(future_to_ticker):
             res = future.result()
@@ -313,21 +263,13 @@ if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"):
 # --- 5. INTERFACE PANEL KONTROL & SIDEBAR ---
 st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro (Sinyal Siap Buy & Target TP/SL)</h1>", unsafe_allow_html=True)
 
-# Panggil fungsi sentimen
-sentiment, color = get_ihsg_sentiment()
-
-# PERBAIKAN: Menambahkan argumen (3) agar streamlit tahu ada 3 kolom
-col_title1, col_title2, col_title3 = st.columns(3) 
-
+col_title1, col_title2 = st.columns(2)
 with col_title1:
-    st.write(f"⏰ Sinkron: {datetime.now().strftime('%H:%M:%S')} WIB")
+    st.write(f"Terakhir Sinkron: {datetime.now().strftime('%H:%M:%S')} WIB")
 with col_title2:
-    st.markdown(f"**Market Sentiment (IHSG):** <span style='color:{color}'>{sentiment}</span>", unsafe_allow_html=True)
-with col_title3:
-    if st.button("🔄 Refresh Data", use_container_width=True):
+    if st.button("🔄 Tembak Refresh Data", use_container_width=True):
         st.cache_data.clear()
-        st.rerun()
-        
+
 with st.sidebar:
     st.header("⚙️ Filter Validasi Pasar")
     only_ready_to_buy = st.checkbox("🎯 Hanya Tampilkan Sinyal SIAP BUY", value=False)
@@ -369,19 +311,12 @@ if len(saham_pilihan) > 0:
                                       .format({
                                           "Live Price": "Rp {:,.0f}",
                                           "Change %": "{:+.2f}%",
+                                          "Turnover (B)": "{:,.2f} B",
                                           "VWAP/MA Baseline": "Rp {:,.0f}",
                                           "Stoch %K": "{:.2f}",
                                           "Stoch %D": "{:.2f}",
-                                          "Dana Masuk %": "{}",
-                                          "Dana Keluar %": "{}",
                                           "Proteksi Stop Loss": "Rp {:,.0f}",
-                                          "Estimasi Take Profit": "Rp {:,.0f}",
-                                          "Est Foreign Buy (B)": "{:,.2f} B",
-                                    "Est Foreign Sell (B)": "{:,.2f} B",
-                                    "Net Foreign (B)": "{:,.2f} B",
-                                    "Net Foreign AVG": "{:,.2f} B",
-                                    "Turnover (B)": "{:,.2f} B"
-
+                                          "Estimasi Take Profit": "Rp {:,.0f}"
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
