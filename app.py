@@ -157,6 +157,7 @@ def analyze_scalping_momentum(ticker):
         # Penilaian Validitas Volume dan Likuiditas
         is_volume_spike = last_volume > (last_vol_ma * 1.3)
         is_highly_liquid = total_turnover_today > 3_000_000_000  # Threshold disesuaikan ke 3B untuk fleksibilitas waktu luar bursa
+       
         # LOGIKA ESTIMASI ARAH, STOP LOSS, & TAKE PROFIT
         if last_price > last_vwap and last_price > last_ema and last_k > last_d and last_k < 50:
             if is_volume_spike and is_highly_liquid:
@@ -164,6 +165,7 @@ def analyze_scalping_momentum(ticker):
 
             else:
                 direction = "📈 UP MOMENTUM (Koleksi)"
+                
             stop_loss_est = round(min(last_vwap, last_ema), 0)
             risk_distance = max(last_price - stop_loss_est, last_price * 0.01)
             take_profit_est = round(last_price + (risk_distance * 1.5), 0)
@@ -280,6 +282,7 @@ def analyze_scalping_momentum(ticker):
             "Est. Arah": direction,
             "Proteksi Stop Loss": stop_loss_est,
             "Estimasi Take Profit": take_profit_est,
+            "Momentum": momentum,
             "Status Sinyal": status_sinyal,   
             "Dana Masuk %": f"{dana_masuk_pct}%",
             "Dana Keluar %": f"{dana_keluar_pct}%",
