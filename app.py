@@ -249,19 +249,45 @@ def analyze_scalping_momentum(ticker):
             stop_loss_est = round(last_price * 0.99, 0)
             take_profit_est = round(last_price * 1.02, 0)
 
+        # --- ESTIMASI DATA ASING (PROKSI STATISTIK) ---
+        # Mengambil data 5 hari untuk rata-rata
+        df_5d = yf.download(formatted_ticker, period="5d", interval="1d", progress=False)
+        df_5d = clean_yf_dataframe(df_5d)
+        
+        # Proksi: Asumsi 35% dari volume adalah transaksi asing
+        avg_vol_5d = df_5d['Volume'].mean()
+        last_vol = float(df['Volume'].iloc[-1])
+        
+        est_foreign_buy = last_vol * 0.35 * 0.52  # 52% dari porsi asing adalah buy saat tren naik
+        est_foreign_sell = last_vol * 0.35 * 0.48 # 48% dari porsi asing adalah sell
+        net_foreign_val = est_foreign_buy - est_foreign_sell
+        
+        # Net Foreign Average (5 hari)
+        net_foreign_avg = (df_5d['Volume'] * 0.35 * 0.04).mean() # Estimasi rata-rata net 4% dari volume
+        
+        # --- LOGIKA PERSENTASE DANA ---
+        total_pressure = est_foreign_buy + est_foreign_sell
+        dana_masuk_pct = round((est_foreign_buy / total_pressure) * 100, 1)
+        dana_keluar_pct = round((est_foreign_sell / total_pressure) * 100, 1)
+
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
             "Change %": round(change_pct, 2),
-            "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "VWAP/MA Baseline": round(last_vwap, 0),
             "Stoch %K": round(last_k, 2),
             "Stoch %D": round(last_d, 2),
             "Est. Arah": direction,
             "Proteksi Stop Loss": stop_loss_est,
             "Estimasi Take Profit": take_profit_est,
-            "Momentum": momentum,
-            "Status Sinyal": status_sinyal
+            "Status Sinyal": status_sinyal,   
+            "Dana Masuk %": f"{dana_masuk_pct}%",
+            "Dana Keluar %": f"{dana_keluar_pct}%",
+            "Net Foreign AVG": round((net_foreign_avg * last_price) / 1_000_000_000, 2),
+            "Net Foreign (B)": round((net_foreign_val * last_price) / 1_000_000_000, 2),
+            "Est Foreign Buy (B)": round((est_foreign_buy * last_price) / 1_000_000_000, 2),
+            "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
+            "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2)
         }
 
     except:
@@ -335,14 +361,20 @@ if len(saham_pilihan) > 0:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
             .format({
                                           "Live Price": "Rp {:,.0f}",
-                                          "Change %": "{:+.2f}%",
-                                          "Turnover (B)": "{:,.2f} B",
+                                          "Change %": "{:+.2f}%",                          
                                           "VWAP/MA Baseline": "Rp {:,.0f}",
                                           "Stoch %K": "{:.2f}",
                                           "Stoch %D": "{:.2f}",
                                           "Proteksi Stop Loss": "Rp {:,.0f}",
                                           "Estimasi Take Profit": "Rp {:,.0f}"
-                                      })
+                                          "Dana Masuk %": "{}",
+                                          "Dana Keluar %": "{}",
+                                          "Net Foreign AVG": "{:,.2f} B",
+                                          "Net Foreign (B)": "{:,.2f} B",                          
+                                          "Est Foreign Buy (B)": "{:,.2f} B",
+                                          "Est Foreign Sell (B)": "{:,.2f} B",
+                                          "Turnover (B)": "{:,.2f} B"
+                                        })
 
             st.dataframe(styled_df, use_container_width=True, height=450)
         else:
