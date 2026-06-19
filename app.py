@@ -218,6 +218,18 @@ if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"):
     st.cache_data.clear()
     
 # --- 5. INTERFACE PANEL KONTROL & SIDEBAR ---
+st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro</h1>", unsafe_allow_html=True)
+saham_pilihan = st.multiselect("Pilih Emiten:", options=master_tickers_clean, default=["BBCA", "BBRI", "TLKM", "GGRM", "JPFA", "NZIA", "SHID"])
+
+if st.button("🔄 Scan Pasar"):
+    df_scalp = run_scalper_scanner(saham_pilihan)
+    if not df_scalp.empty:
+        st.dataframe(df_scalp, use_container_width=True)
+        st.markdown("### 📊 Panduan Matriks")
+        col1, col2 = st.columns(2)
+        col1.markdown("**Momentum:** 🔥 (Overbought/Jenuh Beli), 🧊 (Oversold/Jenuh Jual), 📈 (Bullish/Kuat), 📉 (Bearish/Lemah)")
+        col2.markdown("**Arah:** 🚀 (Strong Up), 📈 (Up), 🚨 (Dump Risk), 📉 (Down)")
+
 st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro (Sinyal Siap Buy & Target TP/SL)</h1>", unsafe_allow_html=True)
 
 col_title1, col_title2 = st.columns(2)
@@ -263,6 +275,7 @@ if len(saham_pilihan) > 0:
                 styles[idx_sl] = 'color: #F87171; font-weight: bold;'
             return styles
 
+        
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
