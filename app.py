@@ -581,8 +581,7 @@ if len(saham_pilihan) > 0:
         if not df_scalp.empty:
 
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
-
-                                      .format({
+            .format({
 
                                           "Live Price": "Rp {:,.0f}",
 
