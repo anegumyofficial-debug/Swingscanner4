@@ -281,19 +281,18 @@ if st.button("🔄 Paksa Ambil Data Baru (Clear Cache)"):
 # --- 5. INTERFACE PANEL KONTROL & SIDEBAR ---
 st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro (Sinyal Siap Buy & Target TP/SL)</h1>", unsafe_allow_html=True)
 
-# --- 5. INTERFACE PANEL KONTROL & SIDEBAR ---
-st.markdown("<h1 class='main-title'>⚡ Scalper Radar Pro (Sinyal Siap Buy & Target TP/SL)</h1>", unsafe_allow_html=True)
-
 # Panggil fungsi sentimen
 sentiment, color = get_ihsg_sentiment()
 
-col_title1, col_title2, col_title3 = st.columns()
+# PERBAIKAN: Menambahkan argumen (3) agar streamlit tahu ada 3 kolom
+col_title1, col_title2, col_title3 = st.columns(3) 
+
 with col_title1:
     st.write(f"⏰ Sinkron: {datetime.now().strftime('%H:%M:%S')} WIB")
 with col_title2:
     st.markdown(f"**Market Sentiment (IHSG):** <span style='color:{color}'>{sentiment}</span>", unsafe_allow_html=True)
 with col_title3:
-    if st.button("🔄 Refresh", use_container_width=True):
+    if st.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
         
