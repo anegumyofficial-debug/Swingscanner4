@@ -109,8 +109,35 @@ def analyze_scalping_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
 
-        # Hitung RSI
+        # 1. DOWNLOAD DATA DULU
+        df = yf.download(formatted_ticker, period="3d", interval="5m", progress=False)
+        df = clean_yf_dataframe(df)
+        is_fallback = False
+        
+        # 2. PENANGANAN FALLBACK (JIKA DATA 5M KOSONG)
+        if df is None or len(df) < 15 or 'Close' not in df.columns:
+            df = yf.download(formatted_ticker, period="3mo", interval="1d", progress=False)
+            df = clean_yf_dataframe(df)
+            is_fallback = True
+            
+        if df is None or len(df) < 15 or 'Close' not in df.columns: 
+            return None
+        
+        # 3. BARU HITUNG INDIKATOR (RSI, VWAP, STOCH, DLL) SETELAH DF VALID
         df['RSI'] = ta.rsi(df['Close'], length=14)
+        
+        if not is_fallback:
+            cum_vol = df['Volume'].cumsum()
+            cum_vol_price = (df['Close'] * df['Volume']).cumsum()
+            df['VWAP'] = cum_vol_price / cum_vol
+        else:
+            df['VWAP'] = ta.ema(df['Close'], length=20)
+        
+        # Lanjutkan sisa kode perhitungan lainnya...
+        stoch = ta.stoch(df['High'], df['Low'], df['Close'], k=14, d=3)
+        # ... (sisanya sama seperti kode Anda)
+        
+        # Pastikan last_rsi diambil di sini
         last_rsi = float(df['RSI'].iloc[-1]) if not pd.isna(df['RSI'].iloc[-1]) else 50.0
         
         # Mode Utama: Coba ambil data intraday 5 menit terlebih dahulu
