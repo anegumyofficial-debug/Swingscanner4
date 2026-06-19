@@ -88,7 +88,7 @@ def clean_yf_dataframe(df):
 
 # --- 4. ENGINE ANALISIS INTERDAY SCALPING & VALIDASI FILTER ---
 
-@st.cache_data(ttl=900) # Update setiap 15 menit
+@st.cache_data(ttl=300) # Update setiap 5 menit
 def get_ihsg_sentiment():
     try:
         ihsg = yf.download("^JKSE", period="5d", progress=False)
