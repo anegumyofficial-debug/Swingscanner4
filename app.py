@@ -108,6 +108,10 @@ def get_ihsg_sentiment():
 def analyze_scalping_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
+
+        # Hitung RSI
+        df['RSI'] = ta.rsi(df['Close'], length=14)
+        last_rsi = float(df['RSI'].iloc[-1]) if not pd.isna(df['RSI'].iloc[-1]) else 50.0
         
         # Mode Utama: Coba ambil data intraday 5 menit terlebih dahulu
         df = yf.download(formatted_ticker, period="3d", interval="5m", progress=False)
@@ -242,6 +246,7 @@ def analyze_scalping_momentum(ticker):
             "VWAP/MA Baseline": round(last_vwap, 0),
             "Stoch %K": round(last_k, 2),
             "Stoch %D": round(last_d, 2),
+            "RSI (14)": round(last_rsi, 2),
             "Est. Arah": direction,
             "Proteksi Stop Loss": stop_loss_est,
             "Estimasi Take Profit": take_profit_est,   
@@ -328,6 +333,7 @@ if len(saham_pilihan) > 0:
                                           "VWAP/MA Baseline": "Rp {:,.0f}",
                                           "Stoch %K": "{:.2f}",
                                           "Stoch %D": "{:.2f}",
+                                          "RSI (14)": "{:.2f},
                                           "Proteksi Stop Loss": "Rp {:,.0f}",
                                           "Estimasi Take Profit": "Rp {:,.0f}",
                                           "Dana Masuk %": "{}",
