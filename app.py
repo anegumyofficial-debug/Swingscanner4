@@ -235,7 +235,8 @@ def analyze_scalping_momentum(ticker):
         dana_masuk_pct = round((est_foreign_buy / total_pressure) * 100, 1)
         dana_keluar_pct = round((est_foreign_sell / total_pressure) * 100, 1)
         
-        return {Ticker": ticker_name,
+        return {
+            "Ticker": ticker_name,
             "Live Price": last_price,
             "Change %": round(change_pct, 2),
             "VWAP/MA Baseline": round(last_vwap, 0),
