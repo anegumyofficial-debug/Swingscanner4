@@ -174,7 +174,19 @@ def analyze_scalping_momentum(ticker):
         # Catatan Penanda jika data beralih ke mode penutupan harian
         if is_fallback:
             direction += " [Hari Kemarin]"
-            
+
+        # Logika Sinyal & Momentum
+        direction = "⏳ SIDEWAYS"
+        if last_price > df['VWAP'].iloc[-1] and last_k > last_d and last_k < 50: direction = "🚀 STRONG UP"
+        elif last_k > last_d: direction = "📈 UP MOMENTUM"
+        elif last_k < last_d and last_k > 65: direction = "🚨 DUMP RISK"
+        elif last_price < df['VWAP'].iloc[-1]: direction = "📉 DOWN"
+        
+        momentum = "⚪ Neutral"
+        if last_k > 80: momentum = "🔥 Overbought"
+        elif last_k < 20: momentum = "🧊 Oversold"
+        elif last_k > last_d: momentum = "📈 Bullish Power"
+        else: momentum = "📉 Bearish Power"
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -185,7 +197,8 @@ def analyze_scalping_momentum(ticker):
             "Stoch %D": round(last_d, 2),
             "Est. Arah": direction,
             "Proteksi Stop Loss": stop_loss_est,
-            "Estimasi Take Profit": take_profit_est
+            "Estimasi Take Profit": take_profit_est,
+            "Turnover (B)": round((last_price * df['Volume'].iloc[-1]) / 1_000_000_000, 2)
         }
     except:
         return None
