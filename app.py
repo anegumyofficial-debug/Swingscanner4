@@ -194,41 +194,7 @@ def analyze_scalping_momentum(ticker):
         elif last_k < 20: momentum = "🧊 Oversold"
         elif last_k > last_d: momentum = "📈 Bullish"
         else: momentum = "📉 Bearish"
-
-        # --- MODIFIKASI LOGIKA ESTIMASI ARAH & VALIDASI VOLUME ---
-        # Definisi status dasar
-        is_strong_up = (last_price > last_vwap) and (last_price > last_ema) and (last_k > last_d) and (last_k < 50)
-        
-        if is_strong_up and is_volume_spike and is_highly_liquid:
-            direction = "🚀 STRONG UP (Siap Buy - Volume Spike!)"
-            status_sinyal = "BUY"
-            stop_loss_est = round(min(last_vwap, last_ema), 0)
-            risk_distance = max(last_price - stop_loss_est, last_price * 0.01)
-            take_profit_est = round(last_price + (risk_distance * 1.5), 0)
             
-        elif last_price > last_vwap and last_k > last_d:
-            direction = "📈 UP MOMENTUM (Koleksi)"
-            status_sinyal = "HOLD"
-            stop_loss_est = round(last_vwap, 0)
-            risk_distance = max(last_price - stop_loss_est, last_price * 0.01)
-            take_profit_est = round(last_price + (risk_distance * 1.5), 0)
-            
-        elif last_k < last_d and last_k > 65:
-            direction = "🚨 DUMP RISK (Jangan Haka)"
-            status_sinyal = "SELL"
-            stop_loss_est = round(last_price * 0.99, 0)
-            take_profit_est = 0
-            
-        elif last_price < last_vwap:
-            direction = "📉 DOWN (Hindari)"
-            status_sinyal = "WAIT"
-            stop_loss_est = 0
-            take_profit_est = 0
-        else:
-            direction = "⏳ SIDEWAYS (Wait)"
-            status_sinyal = "WAIT"
-            stop_loss_est = round(last_price * 0.99, 0)
-            take_profit_est = round(last_price * 1.02, 0)
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
