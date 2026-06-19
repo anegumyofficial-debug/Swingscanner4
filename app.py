@@ -286,7 +286,6 @@ def analyze_scalping_momentum(ticker):
             "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
             "Net Foreign (B)": round((net_foreign_val * last_price) / 1_000_000_000, 2),
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2)
-        }
                 }
     except:
         return None
