@@ -366,7 +366,7 @@ if len(saham_pilihan) > 0:
                                           "Stoch %K": "{:.2f}",
                                           "Stoch %D": "{:.2f}",
                                           "Proteksi Stop Loss": "Rp {:,.0f}",
-                                          "Estimasi Take Profit": "Rp {:,.0f}"
+                                          "Estimasi Take Profit": "Rp {:,.0f}",
                                           "Dana Masuk %": "{}",
                                           "Dana Keluar %": "{}",
                                           "Net Foreign AVG": "{:,.2f} B",
