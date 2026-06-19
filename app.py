@@ -89,160 +89,81 @@ def clean_yf_dataframe(df):
 # --- 4. ENGINE ANALISIS INTERDAY SCALPING & VALIDASI FILTER ---
 
 @st.cache_data(ttl=900) # Update setiap 15 menit
-
 def get_ihsg_sentiment():
-
     try:
-
         ihsg = yf.download("^JKSE", period="5d", progress=False)
-
         ihsg = clean_yf_dataframe(ihsg)
-
         last_close = ihsg['Close'].iloc[-1]
-
         prev_close = ihsg['Close'].iloc[-2]
-
         trend = (last_close - prev_close) / prev_close * 100
-
         
-
         if trend > 0.1:
-
             return "BULLISH 🟢", "#22C55E"
-
         elif trend < -0.1:
-
             return "BEARISH 🔴", "#EF4444"
-
         else:
-
             return "SIDEWAYS 🟡", "#EAB308"
-
     except:
-
         return "NEUTRAL ⚪", "#94A3B8"
 
 def analyze_scalping_momentum(ticker):
-
     try:
-
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
-
         
-
         # Mode Utama: Coba ambil data intraday 5 menit terlebih dahulu
-
         df = yf.download(formatted_ticker, period="3d", interval="5m", progress=False)
-
         df = clean_yf_dataframe(df)
-
         is_fallback = False
 
-        
-
         # Mode Cadangan: Jika di malam hari data 5m kosong, beralih ke data harian agar tidak eror
-
         if df is None or len(df) < 15 or 'Close' not in df.columns:
-
             df = yf.download(formatted_ticker, period="3mo", interval="1d", progress=False)
-
             df = clean_yf_dataframe(df)
-
             is_fallback = True
-
-            
-
         if df is None or len(df) < 15 or 'Close' not in df.columns: 
-
+            
             return None
-
-        
-
+            
         # Perhitungan Indikator Jalur VWAP / MA Cadangan
-
         if not is_fallback:
-
             cum_vol = df['Volume'].cumsum()
-
             cum_vol_price = (df['Close'] * df['Volume']).cumsum()
-
             df['VWAP'] = cum_vol_price / cum_vol
 
         else:
-
             # Di mode harian malam hari, VWAP digantikan perannya oleh EMA20 historis
-
             df['VWAP'] = ta.ema(df['Close'], length=20)
-
         
-
         # Stochastic Oscillator Cepat
-
         stoch = ta.stoch(df['High'], df['Low'], df['Close'], k=14, d=3)
-
         df['STOCHk'] = stoch['STOCHk_14_3_3']
-
         df['STOCHd'] = stoch['STOCHd_14_3_3']
-
-        
-
         df['EMA9'] = ta.ema(df['Close'], length=9)
-
         df['Vol_MA20'] = df['Volume'].rolling(window=20).mean()
-
         total_turnover_today = (df['Close'] * df['Volume']).sum()
 
-        
-
         # Data Menit/Hari Terakhir
-
         last_price = float(df['Close'].iloc[-1])
-
         last_vwap = float(df['VWAP'].iloc[-1]) if not pd.isna(df['VWAP'].iloc[-1]) else last_price
-
         last_k = float(df['STOCHk'].iloc[-1]) if not pd.isna(df['STOCHk'].iloc[-1]) else 50.0
-
         last_d = float(df['STOCHd'].iloc[-1]) if not pd.isna(df['STOCHd'].iloc[-1]) else 50.0
-
         last_ema = float(df['EMA9'].iloc[-1]) if not pd.isna(df['EMA9'].iloc[-1]) else last_price
-
         last_volume = float(df['Volume'].iloc[-1])
-
         last_vol_ma = float(df['Vol_MA20'].iloc[-1]) if not pd.isna(df['Vol_MA20'].iloc[-1]) else 1.0
-
-        
-
         prev_price = float(df['Close'].iloc[-2])
-
         change_pct = ((last_price - prev_price) / prev_price) * 100
-
-        
-
         ticker_name = ticker.replace(".JK", "")
 
-        
-
         # Penilaian Validitas Volume dan Likuiditas
-
         is_volume_spike = last_volume > (last_vol_ma * 1.3)
-
         is_highly_liquid = total_turnover_today > 3_000_000_000  # Threshold disesuaikan ke 3B untuk fleksibilitas waktu luar bursa
-
-        
-
         # LOGIKA ESTIMASI ARAH, STOP LOSS, & TAKE PROFIT
-
         if last_price > last_vwap and last_price > last_ema and last_k > last_d and last_k < 50:
-
             if is_volume_spike and is_highly_liquid:
-
                 direction = "🚀 STRONG UP (Siap Buy)"
 
             else:
-
                 direction = "📈 UP MOMENTUM (Koleksi)"
-
-                
 
             stop_loss_est = round(min(last_vwap, last_ema), 0)
 
