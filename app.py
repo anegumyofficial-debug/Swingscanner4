@@ -437,7 +437,6 @@ if len(saham_pilihan) > 0:
     # 2. TABEL STATISTIK & VOLATILITAS
         st.subheader("📊 Tabel Statistik & Volatilitas")
         st.table(df_result[["Ticker", "Volatility", "Range H-L"]])
-    else:
         st.warning("Data tidak tersedia untuk emiten yang dipilih.")
 else:
     st.info("Silakan pilih emiten di sidebar untuk memulai analisis.")
