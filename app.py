@@ -282,7 +282,7 @@ def analyze_scalping_momentum(ticker):
             inst_flow = "Small Dist ⚪"
         else:
             inst_flow = "Neutral"
-            
+
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -303,7 +303,9 @@ def analyze_scalping_momentum(ticker):
             "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "Momentum": momentum,
-            "Status Sinyal": status_sinyal
+            "Status Sinyal": status_sinyal,
+            "Volatility": round(df['Close'].pct_change().std() * 100, 2),
+            "High vs Low": round(df['High'].max() - df['Low'].min(), 0)
         }
     except:
         return None
@@ -406,6 +408,18 @@ if len(saham_pilihan) > 0:
             
             st.dataframe(styled_df, use_container_width=True, height=450)
         else:
+            # --- TABEL TAMBAHAN: RINGKASAN STATISTIK ---
+st.markdown("---")
+st.subheader("📊 Ringkasan Statistik & Volatilitas")
+
+# Mengambil kolom yang relevan untuk tabel ringkasan
+df_summary = df_scalp[["Ticker", "Live Price", "Volatility", "High vs Low", "Turnover (B)"]]
+
+# Styling untuk tabel ringkasan
+st.dataframe(
+    df_summary.style.background_gradient(subset=['Volatility'], cmap='Blues'),
+    use_container_width=True
+)
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
             
         st.markdown("""
