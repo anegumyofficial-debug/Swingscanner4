@@ -356,7 +356,7 @@ with st.sidebar:
         "Pilih Emiten Pantauan:", 
         
         options=master_tickers_clean, 
-        default=["AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR","GGRM","SGRO","DSSA","HRTA","IRSX", "WIFI","MDKA","RMKO","RMKE","KLBV","BRMS","BUVA","CPIN","ADRO","BUMI","PTRO","ENRG","JPFA","FILM","MYOR","NCKL","BELI","ULTJ","TMPO"])
+        default=["BOLA","FILM","NIRO","WAPO","CARE","CTTH","PANS","BPII","BUMI","BBCA","BBRI","BBNI","BMRI","TLKM","BDMN","IMJS","IRSX","DSSA"])
 
 if len(saham_pilihan) > 0:
     df_scalp = run_scalper_scanner(saham_pilihan)
