@@ -402,9 +402,9 @@ if z_val <= -2:
 elif z_val >= 2:
     styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2; font-weight: bold;' # Merah Tua (Sangat Mahal)
 
-        if not df_scalp.empty:
+    if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
-                                      .format({
+                .format({
                                           "Inst Flow": "{}",
                                           "Live Price": "Rp {:,.0f}",
                                           "Change %": "{:+.2f}%",                          
