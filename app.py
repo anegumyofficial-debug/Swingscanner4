@@ -108,21 +108,7 @@ def get_ihsg_sentiment():
 def analyze_scalping_momentum(ticker):
     try:
         formatted_ticker = ticker if ticker.endswith(".JK") else f"{ticker}.JK"
-# Tambahkan ini di dalam fungsi analyze_scalping_momentum setelah download data
-# Kita perlu data harian untuk menghitung statistik harga yang valid
-df_daily = yf.download(formatted_ticker, period="3mo", interval="1d", progress=False)
-df_daily = clean_yf_dataframe(df_daily)
 
-if df_daily is not None and len(df_daily) > 20:
-    # Hitung Z-Score: (Harga Sekarang - Rata-rata 20 hari) / Standar Deviasi 20 hari
-    window = 20
-    rolling_mean = df_daily['Close'].rolling(window=window).mean()
-    rolling_std = df_daily['Close'].rolling(window=window).std()
-    
-    z_score = (df_daily['Close'].iloc[-1] - rolling_mean.iloc[-1]) / rolling_std.iloc[-1]
-else:
-    z_score = 0.0
-    
         # 1. DOWNLOAD DATA DULU
         df = yf.download(formatted_ticker, period="3d", interval="5m", progress=False)
         df = clean_yf_dataframe(df)
@@ -146,7 +132,18 @@ else:
             df['VWAP'] = cum_vol_price / cum_vol
         else:
             df['VWAP'] = ta.ema(df['Close'], length=20)
-        
+
+# Kita perlu data harian untuk menghitung statistik harga yang valid
+if df_daily is not None and len(df_daily) > 20:
+    # Hitung Z-Score: (Harga Sekarang - Rata-rata 20 hari) / Standar Deviasi 20 hari
+    window = 20
+    rolling_mean = df_daily['Close'].rolling(window=window).mean()
+    rolling_std = df_daily['Close'].rolling(window=window).std()
+    
+    z_score = (df_daily['Close'].iloc[-1] - rolling_mean.iloc[-1]) / rolling_std.iloc[-1]
+else:
+    z_score = 0.0
+
         # Lanjutkan sisa kode perhitungan lainnya...
         stoch = ta.stoch(df['High'], df['Low'], df['Close'], k=14, d=3)
         # ... (sisanya sama seperti kode Anda)
