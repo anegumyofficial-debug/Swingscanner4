@@ -420,8 +420,7 @@ elif z_val >= 2:
                                           "Net Foreign (B)": "{:,.2f} B",                          
                                           "Est Foreign Buy (B)": "{:,.2f} B",
                                           "Est Foreign Sell (B)": "{:,.2f} B",
-                                          "Turnover (B)": "{:,.2f} B",
-                                          'Z-Score': "{:.2f}"
+                                          "Turnover (B)": "{:,.2f} B"
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
