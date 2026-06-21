@@ -425,7 +425,7 @@ elif z_val >= 2:
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
-        else:
+        
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
             
         st.markdown("""
