@@ -282,10 +282,17 @@ def analyze_scalping_momentum(ticker):
             inst_flow = "Small Dist ⚪"
         else:
             inst_flow = "Neutral"
-            
+
+        # Z-Score (menggunakan data harian untuk statistik)
+        df_daily = yf.download(formatted_ticker, period="6mo", interval="1d", progress=False)
+        df_daily = clean_yf_dataframe(df_daily)
+        mean_z = df_daily['Close'].rolling(20).mean().iloc[-1]
+        std_z = df_daily['Close'].rolling(20).std().iloc[-1]
+        z_score = (df['Close'].iloc[-1] - mean_z) / std_z if std_z != 0 else 0
+
         return {
             "Ticker": ticker_name,
-            "Live Price": last_price,
+            "Live Price": float(df['Close'].iloc[-1]),
             "Change %": round(change_pct, 2),
             "VWAP/MA Baseline": round(last_vwap, 0),
             "Stoch %K": round(last_k, 2),
@@ -303,7 +310,8 @@ def analyze_scalping_momentum(ticker):
             "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "Momentum": momentum,
-            "Status Sinyal": status_sinyal
+            "Status Sinyal": status_sinyal,
+            "Z-Score": round(float(z_score), 2)
         }
     except:
         return None
@@ -382,7 +390,17 @@ if len(saham_pilihan) > 0:
             elif "Big Dist" in flow:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
-            
+            # --- STYLING TERPUSAT ---
+def style_scalper(row):
+    styles = [''] * len(row)
+    # Styling Z-Score
+    idx_z = row.index.get_loc('Z-Score')
+    z_val = float(row['Z-Score'])
+    if z_val <= -2: styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
+    elif z_val >= 2: styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
+    
+    # Styling Arah & Flow bisa digabung di sini
+    return styles
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
