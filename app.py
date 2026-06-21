@@ -283,6 +283,23 @@ def analyze_scalping_momentum(ticker):
         else:
             inst_flow = "Neutral"
 
+        # Mengambil baris terakhir
+        last = df.iloc[-1]
+        prev = df.iloc[-2]
+        
+        # Logika Sinyal
+        change_pct = ((last['Close'] - prev['Close']) / prev['Close']) * 100
+        volatility = round(df['Close'].pct_change().std() * 100, 2)
+        range_hl = round(df['High'].max() - df['Low'].min(), 0)
+        
+        # Status Arah
+        if last['Close'] > last['VWAP'] and last['STOCHk'] > last['STOCHd']:
+            status = "🚀 STRONG UP"
+        elif last['Close'] < last['VWAP']:
+            status = "📉 DOWN"
+        else:
+            status = "⏳ SIDEWAYS"
+            
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -304,8 +321,8 @@ def analyze_scalping_momentum(ticker):
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "Momentum": momentum,
             "Status Sinyal": status_sinyal,
-            "Volatility": round(df['Close'].pct_change().std() * 100, 2),
-            "High vs Low": round(df['High'].max() - df['Low'].min(), 0)
+            "Volatility": volatility,
+            "Range H-L": range_hl
         }
     except:
         return None
@@ -343,7 +360,7 @@ with st.sidebar:
         "Pilih Emiten Pantauan:", 
         
         options=master_tickers_clean, 
-        default=["BOLA","FILM","NIRO","WAPO","CARE","CTTH","PANS","BPII","BUMI","BBCA","BBRI","BBNI","BMRI","TLKM","BDMN","IMJS","IRSX","DSSA"])
+        default=["AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR","GGRM","SGRO","DSSA","HRTA","IRSX", "WIFI","MDKA","RMKO","RMKE","KLBV","BRMS","BUVA","CPIN","ADRO","BUMI","PTRO","ENRG","JPFA","FILM","MYOR","NCKL","BELI","ULTJ","TMPO"])
 
 if len(saham_pilihan) > 0:
     df_scalp = run_scalper_scanner(saham_pilihan)
@@ -384,14 +401,7 @@ if len(saham_pilihan) > 0:
             elif "Big Dist" in flow:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
-
-        
-# Styling untuk tabel ringkasan
-st.dataframe(
-    df_summary.style.background_gradient(subset=['Volatility'], cmap='Blues'),
-    use_container_width=True
-)
-
+            
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
@@ -414,14 +424,6 @@ st.dataframe(
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
-                        # --- TABEL TAMBAHAN: RINGKASAN STATISTIK ---
-st.markdown("---")
-st.subheader("📊 Ringkasan Statistik & Volatilitas")
-
-# Mengambil kolom yang relevan untuk tabel ringkasan
-df_summary = df_scalp[["Ticker", "Live Price", "Volatility", "High vs Low", "Turnover (B)"]]
-
-
         else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
             
