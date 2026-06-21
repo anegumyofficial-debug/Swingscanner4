@@ -428,10 +428,9 @@ elif z_val >= 2:
         
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
             
-        st.markdown("""
+        
         ### 💡 Aturan Pembacaan Dashboard Adaptif:
         * **[Hari Kemarin]:** Jika tanda ini muncul di kolom arah, artinya bursa sedang tutup/data menitan kosong, dan dashboard otomatis menampilkan data penutupan hari bursa terakhir agar Anda tetap bisa melakukan analisis malam hari.
         * **Turnover (B):** Mengukur nilai transaksi riil dalam satuan Miliar Rupiah untuk menyaring pergerakan palsu bandar lokal.
-        """)
     else:
         st.error("Gagal menarik data pasar dari Yahoo Finance. Silakan coba tekan tombol refresh di atas beberapa saat lagi.")
