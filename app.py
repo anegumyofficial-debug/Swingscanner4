@@ -407,8 +407,7 @@ if len(saham_pilihan) > 0:
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
-        else:
-            # --- TABEL TAMBAHAN: RINGKASAN STATISTIK ---
+                        # --- TABEL TAMBAHAN: RINGKASAN STATISTIK ---
 st.markdown("---")
 st.subheader("📊 Ringkasan Statistik & Volatilitas")
 
@@ -420,6 +419,8 @@ st.dataframe(
     df_summary.style.background_gradient(subset=['Volatility'], cmap='Blues'),
     use_container_width=True
 )
+
+        else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
             
         st.markdown("""
