@@ -282,24 +282,20 @@ def analyze_scalping_momentum(ticker):
             inst_flow = "Small Dist ⚪"
         else:
             inst_flow = "Neutral"
-
-        # Mengambil baris terakhir
-        last = df.iloc[-1]
-        prev = df.iloc[-2]
-        
-        # Logika Sinyal
-        change_pct = ((last['Close'] - prev['Close']) / prev['Close']) * 100
-        volatility = round(df['Close'].pct_change().std() * 100, 2)
-        range_hl = round(df['High'].max() - df['Low'].min(), 0)
-        
-        # Status Arah
-        if last['Close'] > last['VWAP'] and last['STOCHk'] > last['STOCHd']:
-            status = "🚀 STRONG UP"
-        elif last['Close'] < last['VWAP']:
-            status = "📉 DOWN"
-        else:
-            status = "⏳ SIDEWAYS"
             
+        # --- LOGIKA VOLUME TRANSPARAN ---
+        # Mengukur tren volume 5 periode terakhir
+        vol_trend = df['Volume'].rolling(window=5).mean()
+        last_vol = float(df['Volume'].iloc[-1])
+        prev_vol = float(df['Volume'].iloc[-2])
+        
+        # Penentuan Status Volume (Transparan)
+        if last_vol > prev_vol * 1.1:
+            vol_status = "🟢 Naik (Akumulasi)"
+        elif last_vol < prev_vol * 0.9:
+            vol_status = "🔴 Turun (Distribusi)"
+        else:
+            vol_status = "⚪ Datar (Sideways)"
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -321,8 +317,8 @@ def analyze_scalping_momentum(ticker):
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "Momentum": momentum,
             "Status Sinyal": status_sinyal,
-            "Volatility": volatility,
-            "Range H-L": range_hl
+            "Vol Status": vol_status,
+            "Volume Now": last_vol
         }
     except:
         return None
@@ -422,7 +418,7 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B"
                                       })
-        
+            
             st.dataframe(styled_df, use_container_width=True, height=450)
         else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
@@ -434,9 +430,3 @@ if len(saham_pilihan) > 0:
         """)
     else:
         st.error("Gagal menarik data pasar dari Yahoo Finance. Silakan coba tekan tombol refresh di atas beberapa saat lagi.")
-    # 2. TABEL STATISTIK & VOLATILITAS
-        st.subheader("📊 Tabel Statistik & Volatilitas")
-        st.table(df_result[["Ticker", "Volatility", "Range H-L"]])
-        st.warning("Data tidak tersedia untuk emiten yang dipilih.")
-else:
-    st.info("Silakan pilih emiten di sidebar untuk memulai analisis.")
