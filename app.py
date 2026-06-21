@@ -135,7 +135,6 @@ def analyze_scalping_momentum(ticker):
             
 # Tambahkan ini di dalam fungsi analyze_scalping_momentum setelah download data
 # Kita perlu data harian untuk menghitung statistik harga yang valid
-df_daily = yf.download(formatted_ticker, period="3mo", interval="1d", progress=False)
 df_daily = clean_yf_dataframe(df_daily)
 
 if df_daily is not None and len(df_daily) > 20:
