@@ -132,15 +132,6 @@ def analyze_scalping_momentum(ticker):
             df['VWAP'] = cum_vol_price / cum_vol
         else:
             df['VWAP'] = ta.ema(df['Close'], length=20)
-
-        # Hitung Z-Score (Window 20 hari)
-        if df_daily is not None and len(df_daily) > 20:
-            window = 20
-            mean = df_daily['Close'].rolling(window=window).mean().iloc[-1]
-            std = df_daily['Close'].rolling(window=window).std().iloc[-1]
-            z_score = (df['Close'].iloc[-1] - mean) / std if std != 0 else 0
-        else:
-            z_score = 0
         
         # Lanjutkan sisa kode perhitungan lainnya...
         stoch = ta.stoch(df['High'], df['Low'], df['Close'], k=14, d=3)
@@ -312,8 +303,7 @@ def analyze_scalping_momentum(ticker):
             "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "Momentum": momentum,
-            "Status Sinyal": status_sinyal,
-            "Z-Score": round(float(z_score), 2)
+            "Status Sinyal": status_sinyal
         }
     except:
         return None
@@ -392,19 +382,10 @@ if len(saham_pilihan) > 0:
             elif "Big Dist" in flow:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
-
-        # Di dalam fungsi style_scalper
-idx_z = row.index.get_loc('Z-Score')
-z_val = float(row['Z-Score'])
-
-if z_val <= -2:
-    styles[idx_z] = 'background-color: #166534; color: #DCFCE7; font-weight: bold;' # Hijau Tua (Sangat Murah)
-elif z_val >= 2:
-    styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2; font-weight: bold;' # Merah Tua (Sangat Mahal)
-
-    if not df_scalp.empty:
+            
+        if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
-                .format({
+                                      .format({
                                           "Inst Flow": "{}",
                                           "Live Price": "Rp {:,.0f}",
                                           "Change %": "{:+.2f}%",                          
@@ -420,14 +401,17 @@ elif z_val >= 2:
                                           "Net Foreign (B)": "{:,.2f} B",                          
                                           "Est Foreign Buy (B)": "{:,.2f} B",
                                           "Est Foreign Sell (B)": "{:,.2f} B",
-                                          "Turnover (B)": "{:,.2f} B",
-                                          "Z-Score": "{:.2f}"
+                                          "Turnover (B)": "{:,.2f} B"
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
-        
+        else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
             
-        
+        st.markdown("""
+        ### 💡 Aturan Pembacaan Dashboard Adaptif:
+        * **[Hari Kemarin]:** Jika tanda ini muncul di kolom arah, artinya bursa sedang tutup/data menitan kosong, dan dashboard otomatis menampilkan data penutupan hari bursa terakhir agar Anda tetap bisa melakukan analisis malam hari.
+        * **Turnover (B):** Mengukur nilai transaksi riil dalam satuan Miliar Rupiah untuk menyaring pergerakan palsu bandar lokal.
+        """)
     else:
         st.error("Gagal menarik data pasar dari Yahoo Finance. Silakan coba tekan tombol refresh di atas beberapa saat lagi.")
