@@ -384,7 +384,14 @@ if len(saham_pilihan) > 0:
             elif "Big Dist" in flow:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
-            
+
+        
+# Styling untuk tabel ringkasan
+st.dataframe(
+    df_summary.style.background_gradient(subset=['Volatility'], cmap='Blues'),
+    use_container_width=True
+)
+
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
@@ -414,11 +421,6 @@ st.subheader("📊 Ringkasan Statistik & Volatilitas")
 # Mengambil kolom yang relevan untuk tabel ringkasan
 df_summary = df_scalp[["Ticker", "Live Price", "Volatility", "High vs Low", "Turnover (B)"]]
 
-# Styling untuk tabel ringkasan
-st.dataframe(
-    df_summary.style.background_gradient(subset=['Volatility'], cmap='Blues'),
-    use_container_width=True
-)
 
         else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
