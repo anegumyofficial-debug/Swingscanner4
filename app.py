@@ -422,13 +422,7 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B"
                                       })
-            # 2. TABEL STATISTIK & VOLATILITAS
-        st.subheader("📊 Tabel Statistik & Volatilitas")
-        st.table(df_result[["Ticker", "Volatility", "Range H-L"]])
-    else:
-        st.warning("Data tidak tersedia untuk emiten yang dipilih.")
-else:
-    st.info("Silakan pilih emiten di sidebar untuk memulai analisis.")
+        
             st.dataframe(styled_df, use_container_width=True, height=450)
         else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
@@ -440,3 +434,10 @@ else:
         """)
     else:
         st.error("Gagal menarik data pasar dari Yahoo Finance. Silakan coba tekan tombol refresh di atas beberapa saat lagi.")
+    # 2. TABEL STATISTIK & VOLATILITAS
+        st.subheader("📊 Tabel Statistik & Volatilitas")
+        st.table(df_result[["Ticker", "Volatility", "Range H-L"]])
+    else:
+        st.warning("Data tidak tersedia untuk emiten yang dipilih.")
+else:
+    st.info("Silakan pilih emiten di sidebar untuk memulai analisis.")
