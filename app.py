@@ -132,8 +132,12 @@ def analyze_scalping_momentum(ticker):
             df['VWAP'] = cum_vol_price / cum_vol
         else:
             df['VWAP'] = ta.ema(df['Close'], length=20)
-
+            
+# Tambahkan ini di dalam fungsi analyze_scalping_momentum setelah download data
 # Kita perlu data harian untuk menghitung statistik harga yang valid
+df_daily = yf.download(formatted_ticker, period="3mo", interval="1d", progress=False)
+df_daily = clean_yf_dataframe(df_daily)
+
 if df_daily is not None and len(df_daily) > 20:
     # Hitung Z-Score: (Harga Sekarang - Rata-rata 20 hari) / Standar Deviasi 20 hari
     window = 20
@@ -143,7 +147,6 @@ if df_daily is not None and len(df_daily) > 20:
     z_score = (df_daily['Close'].iloc[-1] - rolling_mean.iloc[-1]) / rolling_std.iloc[-1]
 else:
     z_score = 0.0
-
         # Lanjutkan sisa kode perhitungan lainnya...
         stoch = ta.stoch(df['High'], df['Low'], df['Close'], k=14, d=3)
         # ... (sisanya sama seperti kode Anda)
