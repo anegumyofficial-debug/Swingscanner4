@@ -397,7 +397,7 @@ if len(saham_pilihan) > 0:
         # --- 3. TABEL HASIL RINGKASAN (SUMMARY) ---
         st.subheader("📋 Ringkasan Hasil")
         summary_df = df_scalp.groupby("Est. Arah").agg({
-            
+            }
         
         def style_scalper(row):
             styles = [''] * len(row)
