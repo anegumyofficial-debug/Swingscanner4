@@ -416,31 +416,31 @@ if len(saham_pilihan) > 0:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
 
-        def style_scalper(row):
-            styles = [''] * len(row)
+        # --- FUNGSI STYLING TUNGGAL YANG RAPI ---
+def style_scalper(row):
+    styles = [''] * len(row)
     
-            # Styling Z-Score
-            try:
-                idx_z = row.index.get_loc('Z-Score')
-                z_val = float(row['Z-Score'])
-            if z_val <= -2: 
-                styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
-            elif z_val >= 2:             
-                styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
-            except:
-                pass
+    # 1. Styling Z-Score
+    try:
+        idx_z = row.index.get_loc('Z-Score')
+        z_val = float(row['Z-Score'])
+        if z_val <= -2: 
+            styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
+        elif z_val >= 2: 
+            styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
+    except: 
+        pass
 
-            # Styling Arah
-            try:
-                idx_arah = row.index.get_loc('Est. Arah')
-                arah = str(row['Est. Arah'])
-            if "STRONG UP" in arah:
-                styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
-            elif "DUMP RISK" in arah:
-                styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
-            except:
-                pass
-        
+    # 2. Styling Arah
+    try:
+        idx_arah = row.index.get_loc('Est. Arah')
+        arah = str(row['Est. Arah'])
+        if "STRONG UP" in arah:
+            styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
+        elif "DUMP RISK" in arah:
+            styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
+    except: 
+        pass        
             return styles
         
         if not df_scalp.empty:
