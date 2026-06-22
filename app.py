@@ -296,6 +296,14 @@ def analyze_scalping_momentum(ticker):
             vol_status = "🔴 Turun (Distribusi)"
         else:
             vol_status = "⚪ Datar (Sideways)"
+
+        # Z-Score (menggunakan data harian untuk statistik)
+        df_daily = yf.download(formatted_ticker, period="6mo", interval="1d", progress=False)
+        df_daily = clean_yf_dataframe(df_daily)
+        mean_z = df_daily['Close'].rolling(20).mean().iloc[-1]
+        std_z = df_daily['Close'].rolling(20).std().iloc[-1]
+        z_score = (df['Close'].iloc[-1] - mean_z) / std_z if std_z != 0 else 0
+        
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -318,7 +326,8 @@ def analyze_scalping_momentum(ticker):
             "Momentum": momentum,
             "Status Sinyal": status_sinyal,
             "Vol Status": vol_status,
-            "Volume Now": last_vol
+            "Volume Now": last_vol,
+            "Z-Score": round(float(z_score), 2)
         }
     except:
         return None
@@ -397,6 +406,18 @@ if len(saham_pilihan) > 0:
             elif "Big Dist" in flow:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
+
+        # --- STYLING TERPUSAT ---
+def style_scalper(row):
+    styles = [''] * len(row)
+    # Styling Z-Score
+    idx_z = row.index.get_loc('Z-Score')
+    z_val = float(row['Z-Score'])
+    if z_val <= -2: styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
+    elif z_val >= 2: styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
+    
+    # Styling Arah & Flow bisa digabung di sini
+    return styles
             
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
