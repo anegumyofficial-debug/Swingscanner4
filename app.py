@@ -406,11 +406,7 @@ if len(saham_pilihan) > 0:
                 styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
                 styles[idx_sl] = 'color: #F87171; font-weight: bold;'
             return styles
-
-        def style_scalper(row):
-            styles = [''] * len(row)
-            # ... (kode sebelumnya)
-            
+      
             # Tambahan styling untuk Inst Flow
             idx_flow = row.index.get_loc('Inst Flow')
             flow = str(row['Inst Flow'])
@@ -429,7 +425,7 @@ if len(saham_pilihan) > 0:
                 z_val = float(row['Z-Score'])
             if z_val <= -2: 
                 styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
-            elif z_val >= 2: 
+            elif z_val >= 2:             
                 styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
             except:
                 pass
