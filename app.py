@@ -122,27 +122,6 @@ def analyze_scalping_momentum(ticker):
             
         if df is None or len(df) < 15 or 'Close' not in df.columns: 
             return None
-
-        # 2. Hitung Indikator
-        df['EMA9'] = ta.ema(df['Close'], length=9)
-        df['mean_20'] = df['Close'].rolling(window=20).mean()
-        df['std_20'] = df['Close'].rolling(window=20).std()
-        df['z_score'] = (df['Close'] - df['mean_20']) / df['std_20']
-        
-        last_price = float(df['Close'].iloc[-1])
-        last_z = float(df['z_score'].iloc[-1])
-        
-        # 3. Logika Arah Berdasarkan Z-Score
-        if last_z < -2.0:
-            direction = "🟢 OVERSOLD (Z-Score < -2)"
-            status_sinyal = "BUY"
-        elif last_z > 2.0:
-            direction = "🔴 OVERBOUGHT (Z-Score > 2)"
-            status_sinyal = "SELL"
-        else:
-            direction = "⏳ NEUTRAL"
-            status_sinyal = "WAIT"
-            
         
         # 3. BARU HITUNG INDIKATOR (RSI, VWAP, STOCH, DLL) SETELAH DF VALID
         df['RSI'] = ta.rsi(df['Close'], length=14)
@@ -339,8 +318,7 @@ def analyze_scalping_momentum(ticker):
             "Momentum": momentum,
             "Status Sinyal": status_sinyal,
             "Vol Status": vol_status,
-            "Volume Now": last_vol,
-            "Z-Score": round(last_z, 2)
+            "Volume Now": last_vol
         }
     except:
         return None
@@ -391,30 +369,39 @@ if len(saham_pilihan) > 0:
         
         def style_scalper(row):
             styles = [''] * len(row)
-            # Styling Z-Score
-            try:
-                idx_z = row.index.get_loc('Z-Score')
-                z_val = float(row['Z-Score'])
-                if z_val <= -2: 
-                    styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
-                elif z_val >= 2: 
-                    styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
-            except: 
-                pass
-
-            # Styling Arah
-            try:
-                idx_arah = row.index.get_loc('Est. Arah')
-                arah = str(row['Est. Arah'])
-                if "STRONG UP" in arah:
-                    styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
-                elif "DUMP RISK" in arah:
-                    styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
-            except: 
-                pass
-
+            arah = str(row['Est. Arah'])
+            idx_arah = row.index.get_loc('Est. Arah')
+            idx_sl = row.index.get_loc('Proteksi Stop Loss')
+            idx_tp = row.index.get_loc('Estimasi Take Profit')
+            
+            if "STRONG UP" in arah:
+                styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
+                styles[idx_tp] = 'color: #34D399; font-weight: bold;'
+            elif "UP MOMENTUM" in arah:
+                styles[idx_arah] = 'background-color: #065F46; color: #A7F3D0;'
+                styles[idx_tp] = 'color: #34D399;'
+            elif "DUMP RISK" in arah:
+                styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
+                styles[idx_sl] = 'color: #F87171; font-weight: bold;'
             return styles
-        format_dict = {"Inst Flow": "{}",
+
+        def style_scalper(row):
+            styles = [''] * len(row)
+            # ... (kode sebelumnya)
+            
+            # Tambahan styling untuk Inst Flow
+            idx_flow = row.index.get_loc('Inst Flow')
+            flow = str(row['Inst Flow'])
+            if "Big Accum" in flow:
+                styles[idx_flow] = 'background-color: #065F46; color: white;'
+            elif "Big Dist" in flow:
+                styles[idx_flow] = 'background-color: #991B1B; color: white;'
+            return styles
+            
+        if not df_scalp.empty:
+            styled_df = df_scalp.style.apply(style_scalper, axis=1)\
+                                      .format({
+                                          "Inst Flow": "{}",
                                           "Live Price": "Rp {:,.0f}",
                                           "Change %": "{:+.2f}%",                          
                                           "VWAP/MA Baseline": "Rp {:,.0f}",
@@ -430,8 +417,12 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Buy (B)": "{:,.2f} B",
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B"
-                                      }
-        
+                                      })
+            
+            st.dataframe(styled_df, use_container_width=True, height=450)
+        else:
+            st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
+            
         st.markdown("""
         ### 💡 Aturan Pembacaan Dashboard Adaptif:
         * **[Hari Kemarin]:** Jika tanda ini muncul di kolom arah, artinya bursa sedang tutup/data menitan kosong, dan dashboard otomatis menampilkan data penutupan hari bursa terakhir agar Anda tetap bisa melakukan analisis malam hari.
