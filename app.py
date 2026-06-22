@@ -430,7 +430,7 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Buy (B)": "{:,.2f} B",
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B"
-                                      })
+                                      }
             styled_df = df_scalp.style.apply(style_scalper, axis=1).format(format_dict)
             st.dataframe(styled_df, use_container_width=True, height=450)
         else:
