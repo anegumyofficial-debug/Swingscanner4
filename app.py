@@ -296,6 +296,24 @@ def analyze_scalping_momentum(ticker):
             vol_status = "🔴 Turun (Distribusi)"
         else:
             vol_status = "⚪ Datar (Sideways)"
+
+        # Tambahkan di bagian perhitungan indikator
+        # Menghitung Volatilitas (Standard Deviation 20 periode)
+        df['StdDev'] = df['Close'].rolling(window=20).std()
+        # Menghitung Z-Score sederhana untuk evaluasi harga (apakah ekstrem atau tidak)
+        df['Z-Score'] = (df['Close'] - df['Close'].rolling(window=20).mean()) / df['StdDev']
+
+        # Ambil nilai terakhir
+        last_std = float(df['StdDev'].iloc[-1]) if not pd.isna(df['StdDev'].iloc[-1]) else 0
+        last_zscore = float(df['Z-Score'].iloc[-1]) if not pd.isna(df['Z-Score'].iloc[-1]) else 0
+
+        # Evaluasi Risiko
+        if last_zscore > 2:
+            evaluasi = "🔴 Over-extended (Risiko Koreksi)"
+        elif last_zscore < -2:
+            evaluasi = "🟢 Undervalued (Potensi Rebound)"
+        else:
+            evaluasi = "⚪ Normal"
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -318,7 +336,9 @@ def analyze_scalping_momentum(ticker):
             "Momentum": momentum,
             "Status Sinyal": status_sinyal,
             "Vol Status": vol_status,
-            "Volume Now": last_vol
+            "Volume Now": last_vol,
+            "Volatilitas (StdDev)": round(last_std, 2),
+            "Evaluasi Risiko": evaluasi
         }
     except:
         return None
@@ -397,7 +417,16 @@ if len(saham_pilihan) > 0:
             elif "Big Dist" in flow:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
-            
+
+            # Tambahan styling untuk Evaluasi Risiko
+            idx_eval = row.index.get_loc('Evaluasi Risiko')
+            eval_val = str(row['Evaluasi Risiko'])
+            if "Over-extended" in eval_val:
+                styles[idx_eval] = 'background-color: #7f1d1d; color: white;'
+            elif "Undervalued" in eval_val:
+                styles[idx_eval] = 'background-color: #064e3b; color: white;'
+            return styles
+    
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
@@ -416,7 +445,9 @@ if len(saham_pilihan) > 0:
                                           "Net Foreign (B)": "{:,.2f} B",                          
                                           "Est Foreign Buy (B)": "{:,.2f} B",
                                           "Est Foreign Sell (B)": "{:,.2f} B",
-                                          "Turnover (B)": "{:,.2f} B"
+                                          "Turnover (B)": "{:,.2f} B",
+                                          "Volatilitas (StdDev)": "{:.2f}",
+                                          "Evaluasi Risiko": "{}
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
