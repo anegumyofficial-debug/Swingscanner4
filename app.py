@@ -447,7 +447,7 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B",
                                           "Volatilitas (StdDev)": "{:.2f}",
-                                          "Evaluasi Risiko": "{}
+                                          "Evaluasi Risiko": "{}"
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
