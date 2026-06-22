@@ -122,6 +122,27 @@ def analyze_scalping_momentum(ticker):
             
         if df is None or len(df) < 15 or 'Close' not in df.columns: 
             return None
+
+        # 2. Hitung Indikator
+        df['EMA9'] = ta.ema(df['Close'], length=9)
+        df['mean_20'] = df['Close'].rolling(window=20).mean()
+        df['std_20'] = df['Close'].rolling(window=20).std()
+        df['z_score'] = (df['Close'] - df['mean_20']) / df['std_20']
+        
+        last_price = float(df['Close'].iloc[-1])
+        last_z = float(df['z_score'].iloc[-1])
+        
+        # 3. Logika Arah Berdasarkan Z-Score
+        if last_z < -2.0:
+            direction = "🟢 OVERSOLD (Z-Score < -2)"
+            status_sinyal = "BUY"
+        elif last_z > 2.0:
+            direction = "🔴 OVERBOUGHT (Z-Score > 2)"
+            status_sinyal = "SELL"
+        else:
+            direction = "⏳ NEUTRAL"
+            status_sinyal = "WAIT"
+            
         
         # 3. BARU HITUNG INDIKATOR (RSI, VWAP, STOCH, DLL) SETELAH DF VALID
         df['RSI'] = ta.rsi(df['Close'], length=14)
@@ -296,23 +317,9 @@ def analyze_scalping_momentum(ticker):
             vol_status = "🔴 Turun (Distribusi)"
         else:
             vol_status = "⚪ Datar (Sideways)"
-
-        # Z-Score (menggunakan data harian untuk statistik)
-        df_daily = yf.download(formatted_ticker, period="6mo", interval="1d", progress=False)
-        df_daily = clean_yf_dataframe(df_daily)
-        mean_z = df_daily['Close'].rolling(20).mean().iloc[-1]
-        std_z = df_daily['Close'].rolling(20).std().iloc[-1]
-        z_score = (df['Close'].iloc[-1] - mean_z) / std_z if std_z != 0 else 0
-
-        # Tambahkan ini di bagian perhitungan indikator
-window_z = 20
-df['mean_20'] = df['Close'].rolling(window=window_z).mean()
-df['std_20'] = df['Close'].rolling(window=window_z).std()
-df['z_score'] = (df['Close'] - df['mean_20']) / df['std_20']
-
         return {
             "Ticker": ticker_name,
-            "Live Price": float(df['Close'].iloc[-1]),
+            "Live Price": last_price,
             "Change %": round(change_pct, 2),
             "VWAP/MA Baseline": round(last_vwap, 0),
             "Stoch %K": round(last_k, 2),
@@ -333,8 +340,7 @@ df['z_score'] = (df['Close'] - df['mean_20']) / df['std_20']
             "Status Sinyal": status_sinyal,
             "Vol Status": vol_status,
             "Volume Now": last_vol,
-            "Z-Score": round(float(z_score), 2),
-            "Z-Score (20)": round(last_z, 2)
+            "Z-Score": round(last_z, 2)
         }
     except:
         return None
@@ -414,23 +420,33 @@ if len(saham_pilihan) > 0:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
 
-        # --- STYLING TERPUSAT ---
 def style_scalper(row):
     styles = [''] * len(row)
-    # Styling Z-Score
-    idx_z = row.index.get_loc('Z-Score')
-    z_val = float(row['Z-Score'])
-    if z_val <= -2: styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
-    elif z_val >= 2: styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
     
-    # Styling Arah & Flow bisa digabung di sini
+    # Styling Z-Score
+    try:
+        idx_z = row.index.get_loc('Z-Score')
+        z_val = float(row['Z-Score'])
+        if z_val <= -2: 
+            styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
+        elif z_val >= 2: 
+            styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
+    except:
+        pass
+
+    # Styling Arah
+    try:
+        idx_arah = row.index.get_loc('Est. Arah')
+        arah = str(row['Est. Arah'])
+        if "STRONG UP" in arah:
+            styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
+        elif "DUMP RISK" in arah:
+            styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
+    except:
+        pass
+        
     return styles
-
-    if last_z < -2.0:
-    direction = "🟢 OVERSOLD (Z-Score < -2)"
-elif last_z > 2.0:
-    direction = "🔴 OVERBOUGHT (Z-Score > 2)"
-
+        
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
