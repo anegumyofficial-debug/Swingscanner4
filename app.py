@@ -389,7 +389,7 @@ if len(saham_pilihan) > 0:
         
         df_scalp = df_scalp.sort_values(by="Change %", ascending=False)
         
-        def style_scalper(row):
+def style_scalper(row):
     styles = [''] * len(row)
     
     # Styling Z-Score
@@ -400,7 +400,8 @@ if len(saham_pilihan) > 0:
             styles[idx_z] = 'background-color: #166534; color: #DCFCE7;'
         elif z_val >= 2: 
             styles[idx_z] = 'background-color: #991B1B; color: #FEE2E2;'
-    except: pass
+    except: 
+        pass
 
     # Styling Arah
     try:
@@ -410,7 +411,8 @@ if len(saham_pilihan) > 0:
             styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
         elif "DUMP RISK" in arah:
             styles[idx_arah] = 'background-color: #991B1B; color: white; font-weight: bold;'
-    except: pass
+    except: 
+        pass
 
     # Styling Inst Flow
     try:
@@ -420,7 +422,8 @@ if len(saham_pilihan) > 0:
             styles[idx_flow] = 'background-color: #065F46; color: white;'
         elif "Big Dist" in flow:
             styles[idx_flow] = 'background-color: #991B1B; color: white;'
-    except: pass
+    except: 
+        pass
     
     return styles
 
@@ -432,8 +435,7 @@ if len(saham_pilihan) > 0:
         if only_ready_to_buy:
             df_scalp = df_scalp[df_scalp["Est. Arah"].str.contains("STRONG UP|UP MOMENTUM", na=False)]
         
-        df_scalp = df_scalp.sort_values(by="Change %", ascending=False)
-        
+        df_scalp = df_scalp.sort_values(by="Change %", ascending=False)        
         styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
                                           "Inst Flow": "{}",
