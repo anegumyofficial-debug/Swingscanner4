@@ -391,7 +391,6 @@ if len(saham_pilihan) > 0:
         
         def style_scalper(row):
             styles = [''] * len(row)
-    
             # Styling Z-Score
             try:
                 idx_z = row.index.get_loc('Z-Score')
@@ -414,31 +413,8 @@ if len(saham_pilihan) > 0:
             except: 
                 pass
 
-            # Styling Inst Flow
-            try:
-                idx_flow = row.index.get_loc('Inst Flow')
-                flow = str(row['Inst Flow'])
-                if "Big Accum" in flow:
-                    styles[idx_flow] = 'background-color: #065F46; color: white;'
-                elif "Big Dist" in flow:
-                    styles[idx_flow] = 'background-color: #991B1B; color: white;'
-            except: 
-                pass
-    
             return styles
-
-        # --- LOGIKA MAIN DISPLAY ---
-        if len(saham_pilihan) > 0:
-            df_scalp = run_scalper_scanner(saham_pilihan)
-    
-            if not df_scalp.empty:
-                if only_ready_to_buy:
-                    df_scalp = df_scalp[df_scalp["Est. Arah"].str.contains("STRONG UP|UP MOMENTUM", na=False)]
-        
-                df_scalp = df_scalp.sort_values(by="Change %", ascending=False)        
-                styled_df = df_scalp.style.apply(style_scalper, axis=1)\
-                                      .format({
-                                          "Inst Flow": "{}",
+        format_dict = {"Inst Flow": "{}",
                                           "Live Price": "Rp {:,.0f}",
                                           "Change %": "{:+.2f}%",                          
                                           "VWAP/MA Baseline": "Rp {:,.0f}",
@@ -455,7 +431,7 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B"
                                       })
-                styled_df = df_scalp.style.apply(style_scalper, axis=1).format(format_dict)
+            styled_df = df_scalp.style.apply(style_scalper, axis=1).format(format_dict)
             st.dataframe(styled_df, use_container_width=True, height=450)
         else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
