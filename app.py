@@ -431,8 +431,7 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B"
                                       }
-            st.dataframe(styled_df, use_container_width=True, height=450)
-        else:
+                  else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
             
         st.markdown("""
