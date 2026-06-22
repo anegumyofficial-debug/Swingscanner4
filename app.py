@@ -296,6 +296,14 @@ def analyze_scalping_momentum(ticker):
             vol_status = "🔴 Turun (Distribusi)"
         else:
             vol_status = "⚪ Datar (Sideways)"
+
+        # Hitung Standar Deviasi dari 20 periode terakhir
+        std_dev = float(df['Close'].tail(20).std())
+        
+        # Logika Evaluasi Sederhana
+        is_high_volatility = std_dev > (last_price * 0.02) # > 2% dari harga
+        evaluasi = "Stabil" if not is_high_volatility else "High Volatility"
+        
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -318,7 +326,9 @@ def analyze_scalping_momentum(ticker):
             "Momentum": momentum,
             "Status Sinyal": status_sinyal,
             "Vol Status": vol_status,
-            "Volume Now": last_vol
+            "Volume Now": last_vol,
+            "Std Dev": std_dev,
+            "Evaluasi": evaluasi
         }
     except:
         return None
@@ -366,6 +376,28 @@ if len(saham_pilihan) > 0:
             df_scalp = df_scalp[df_scalp["Est. Arah"].str.contains("STRONG UP|UP MOMENTUM")]
         
         df_scalp = df_scalp.sort_values(by="Change %", ascending=False)
+
+# --- 1. TABEL UTAMA ---
+        st.dataframe(styled_df, use_container_width=True, height=450)
+        
+        # --- 2. TABEL TAMBAHAN: ANALISIS STATISTIK & EVALUASI ---
+        st.subheader("📊 Statistik & Evaluasi")
+        col1, col2 = st.columns()
+        
+        with col1:
+            st.write("### Standar Deviasi (Volatilitas)")
+            # Tabel khusus menampilkan Ticker dan Standar Deviasi
+            st.table(df_scalp[["Ticker", "Std Dev"]].sort_values("Std Dev", ascending=False).head(10))
+            
+        with col2:
+            st.write("### Evaluasi Performa")
+            # Tabel khusus menampilkan Ticker dan Status Evaluasi
+            st.table(df_scalp[["Ticker", "Evaluasi", "Status Sinyal"]].head(10))
+            
+        # --- 3. TABEL HASIL RINGKASAN (SUMMARY) ---
+        st.subheader("📋 Ringkasan Hasil")
+        summary_df = df_scalp.groupby("Est. Arah").agg({
+            
         
         def style_scalper(row):
             styles = [''] * len(row)
@@ -417,8 +449,8 @@ if len(saham_pilihan) > 0:
                                           "Est Foreign Buy (B)": "{:,.2f} B",
                                           "Est Foreign Sell (B)": "{:,.2f} B",
                                           "Turnover (B)": "{:,.2f} B"
-                                      })
-            
+                                      }) .rename(columns={"Ticker": "Jumlah Emiten", "Live Price": "Rata-rata Harga"})
+            st.dataframe(summary_df, use_container_width=True)
             st.dataframe(styled_df, use_container_width=True, height=450)
         else:
             st.warning("⚠️ Tidak ada emiten yang lolos filter validasi ketat 'Siap Buy' saat ini.")
