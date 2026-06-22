@@ -306,7 +306,7 @@ def analyze_scalping_momentum(ticker):
         
         return {
             "Ticker": ticker_name,
-            "Live Price": last_price,
+            "Live Price": float(df['Close'].iloc[-1]),
             "Change %": round(change_pct, 2),
             "VWAP/MA Baseline": round(last_vwap, 0),
             "Stoch %K": round(last_k, 2),
