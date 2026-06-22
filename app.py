@@ -378,8 +378,7 @@ if len(saham_pilihan) > 0:
         df_scalp = df_scalp.sort_values(by="Change %", ascending=False)
 
 # --- 1. TABEL UTAMA ---
-        st.dataframe(styled_df, use_container_width=True, height=450)
-        
+                
         # --- 2. TABEL TAMBAHAN: ANALISIS STATISTIK & EVALUASI ---
         st.subheader("📊 Statistik & Evaluasi")
         col1, col2 = st.columns()
