@@ -303,7 +303,13 @@ def analyze_scalping_momentum(ticker):
         mean_z = df_daily['Close'].rolling(20).mean().iloc[-1]
         std_z = df_daily['Close'].rolling(20).std().iloc[-1]
         z_score = (df['Close'].iloc[-1] - mean_z) / std_z if std_z != 0 else 0
-        
+
+        # Tambahkan ini di bagian perhitungan indikator
+window_z = 20
+df['mean_20'] = df['Close'].rolling(window=window_z).mean()
+df['std_20'] = df['Close'].rolling(window=window_z).std()
+df['z_score'] = (df['Close'] - df['mean_20']) / df['std_20']
+
         return {
             "Ticker": ticker_name,
             "Live Price": float(df['Close'].iloc[-1]),
@@ -327,7 +333,8 @@ def analyze_scalping_momentum(ticker):
             "Status Sinyal": status_sinyal,
             "Vol Status": vol_status,
             "Volume Now": last_vol,
-            "Z-Score": round(float(z_score), 2)
+            "Z-Score": round(float(z_score), 2),
+            "Z-Score (20)": round(last_z, 2)
         }
     except:
         return None
@@ -418,7 +425,12 @@ def style_scalper(row):
     
     # Styling Arah & Flow bisa digabung di sini
     return styles
-            
+
+    if last_z < -2.0:
+    direction = "🟢 OVERSOLD (Z-Score < -2)"
+elif last_z > 2.0:
+    direction = "🔴 OVERBOUGHT (Z-Score > 2)"
+
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
