@@ -393,6 +393,9 @@ if len(saham_pilihan) > 0:
             idx_arah = row.index.get_loc('Est. Arah')
             idx_sl = row.index.get_loc('Proteksi Stop Loss')
             idx_tp = row.index.get_loc('Estimasi Take Profit')
+            idx_masuk = row.index.get_loc('Dana Masuk %')
+            idx_keluar = row.index.get_loc('Dana Keluar %')
+            
             
             if "STRONG UP" in arah:
                 styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
