@@ -254,6 +254,13 @@ def analyze_scalping_momentum(ticker):
         avg_vol_5d = df_5d['Volume'].mean()
         last_vol = float(df['Volume'].iloc[-1])
         
+        est_foreign_buy = last_vol * 0.35 * 0.52  # 52% dari porsi asing adalah buy saat tren naik
+        est_foreign_sell = last_vol * 0.35 * 0.48 # 48% dari porsi asing adalah sell
+        net_foreign_val = est_foreign_buy - est_foreign_sell
+        
+        # Net Foreign Average (5 hari)
+        net_foreign_avg = (df_5d['Volume'] * 0.35 * 0.04).mean() # Estimasi rata-rata net 4% dari volume
+        
         # --- LOGIKA PERSENTASE DANA ---
         total_pressure = est_foreign_buy + est_foreign_sell
         dana_masuk_pct = round((est_foreign_buy / total_pressure) * 100, 1)
@@ -276,37 +283,6 @@ def analyze_scalping_momentum(ticker):
         else:
             inst_flow = "Neutral"
             
-        # --- LOGIKA VOLUME TRANSPARAN ---
-        # Mengukur tren volume 5 periode terakhir
-        vol_trend = df['Volume'].rolling(window=5).mean()
-        last_vol = float(df['Volume'].iloc[-1])
-        prev_vol = float(df['Volume'].iloc[-2])
-        
-        # Penentuan Status Volume (Transparan)
-        if last_vol > prev_vol * 1.1:
-            vol_status = "🟢 Naik (Akumulasi)"
-        elif last_vol < prev_vol * 0.9:
-            vol_status = "🔴 Turun (Distribusi)"
-        else:
-            vol_status = "⚪ Datar (Sideways)"
-
-        # Tambahkan di bagian perhitungan indikator
-        # Menghitung Volatilitas (Standard Deviation 20 periode)
-        df['StdDev'] = df['Close'].rolling(window=20).std()
-        # Menghitung Z-Score sederhana untuk evaluasi harga (apakah ekstrem atau tidak)
-        df['Z-Score'] = (df['Close'] - df['Close'].rolling(window=20).mean()) / df['StdDev']
-
-        # Ambil nilai terakhir
-        last_std = float(df['StdDev'].iloc[-1]) if not pd.isna(df['StdDev'].iloc[-1]) else 0
-        last_zscore = float(df['Z-Score'].iloc[-1]) if not pd.isna(df['Z-Score'].iloc[-1]) else 0
-
-        # Evaluasi Risiko
-        if last_zscore > 2:
-            evaluasi = "🔴 Over-extended (Risiko Koreksi)"
-        elif last_zscore < -2:
-            evaluasi = "🟢 Undervalued (Potensi Rebound)"
-        else:
-            evaluasi = "⚪ Normal"
         return {
             "Ticker": ticker_name,
             "Live Price": last_price,
@@ -327,11 +303,7 @@ def analyze_scalping_momentum(ticker):
             "Est Foreign Sell (B)": round((est_foreign_sell * last_price) / 1_000_000_000, 2),
             "Turnover (B)": round(total_turnover_today / 1_000_000_000, 2),
             "Momentum": momentum,
-            "Status Sinyal": status_sinyal,
-            "Vol Status": vol_status,
-            "Volume Now": last_vol,
-            "Volatilitas (StdDev)": round(last_std, 2),
-            "Evaluasi Risiko": evaluasi
+            "Status Sinyal": status_sinyal
         }
     except:
         return None
@@ -369,7 +341,7 @@ with st.sidebar:
         "Pilih Emiten Pantauan:", 
         
         options=master_tickers_clean, 
-        default=["BOLA","FILM","NIRO","WAPO","CARE","CTTH","PANS","BPII","BUMI","BBCA","BBRI","BBNI","BMRI","TLKM","BDMN","IMJS","IRSX","DSSA"])
+        default=["AADI", "BBCA", "BBRI", "BBNI", "BBTN", "INDF", "ICBP", "CBDK", "CMRY", "AMRT", "ANTM", "KLBF", "KAEF", "INKP", "ITMG", "UNTR","GGRM","SGRO","DSSA","HRTA","IRSX", "WIFI","MDKA","RMKO","RMKE","KLBV","BRMS","BUVA","CPIN","ADRO","BUMI","PTRO","ENRG","JPFA","FILM","MYOR","NCKL","BELI","ULTJ","TMPO"])
 
 if len(saham_pilihan) > 0:
     df_scalp = run_scalper_scanner(saham_pilihan)
@@ -386,9 +358,6 @@ if len(saham_pilihan) > 0:
             idx_arah = row.index.get_loc('Est. Arah')
             idx_sl = row.index.get_loc('Proteksi Stop Loss')
             idx_tp = row.index.get_loc('Estimasi Take Profit')
-            idx_masuk = row.index.get_loc('Dana Masuk %')
-            idx_keluar = row.index.get_loc('Dana Keluar %')
-            
             
             if "STRONG UP" in arah:
                 styles[idx_arah] = 'background-color: #047857; color: white; font-weight: bold;'
@@ -413,16 +382,7 @@ if len(saham_pilihan) > 0:
             elif "Big Dist" in flow:
                 styles[idx_flow] = 'background-color: #991B1B; color: white;'
             return styles
-
-            # Tambahan styling untuk Evaluasi Risiko
-            idx_eval = row.index.get_loc('Evaluasi Risiko')
-            eval_val = str(row['Evaluasi Risiko'])
-            if "Over-extended" in eval_val:
-                styles[idx_eval] = 'background-color: #7f1d1d; color: white;'
-            elif "Undervalued" in eval_val:
-                styles[idx_eval] = 'background-color: #064e3b; color: white;'
-            return styles
-    
+            
         if not df_scalp.empty:
             styled_df = df_scalp.style.apply(style_scalper, axis=1)\
                                       .format({
@@ -441,9 +401,7 @@ if len(saham_pilihan) > 0:
                                           "Net Foreign (B)": "{:,.2f} B",                          
                                           "Est Foreign Buy (B)": "{:,.2f} B",
                                           "Est Foreign Sell (B)": "{:,.2f} B",
-                                          "Turnover (B)": "{:,.2f} B",
-                                          "Volatilitas (StdDev)": "{:.2f}",
-                                          "Evaluasi Risiko": "{}"
+                                          "Turnover (B)": "{:,.2f} B"
                                       })
             
             st.dataframe(styled_df, use_container_width=True, height=450)
