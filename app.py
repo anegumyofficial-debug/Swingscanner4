@@ -254,10 +254,6 @@ def analyze_scalping_momentum(ticker):
         avg_vol_5d = df_5d['Volume'].mean()
         last_vol = float(df['Volume'].iloc[-1])
         
-        est_foreign_buy = last_vol * 0.35 * 0.52  # 52% dari porsi asing adalah buy saat tren naik
-        est_foreign_sell = last_vol * 0.35 * 0.48 # 48% dari porsi asing adalah sell
-        net_foreign_val = est_foreign_buy - est_foreign_sell
-        
         # Net Foreign Average (5 hari)
         net_foreign_avg = (df_5d['Volume'] * 0.35 * 0.04).mean() # Estimasi rata-rata net 4% dari volume
         
