@@ -254,22 +254,21 @@ def analyze_scalping_momentum(ticker):
         avg_vol_5d = df_5d['Volume'].mean()
         last_vol = float(df['Volume'].iloc[-1])
         
+        est_foreign_buy = last_vol * 0.35 * 0.52  # 52% dari porsi asing adalah buy saat tren naik
+        est_foreign_sell = last_vol * 0.35 * 0.48 # 48% dari porsi asing adalah sell
+        net_foreign_val = est_foreign_buy - est_foreign_sell
+        
         # Net Foreign Average (5 hari)
         net_foreign_avg = (df_5d['Volume'] * 0.35 * 0.04).mean() # Estimasi rata-rata net 4% dari volume
         
         # --- LOGIKA PERSENTASE DANA ---
-        # Jika harga naik > VWAP, bobot beli meningkat secara dinamis
-        price_vs_vwap = (last_price - last_vwap) / last_vwap
-        # Tambahkan pengaruh RSI untuk bobot (RSI tinggi = tekanan beli tinggi)
-        rsi_weight = (last_rsi / 100) 
+        total_pressure = est_foreign_buy + est_foreign_sell
+        dana_masuk_pct = round((est_foreign_buy / total_pressure) * 100, 1)
+        dana_keluar_pct = round((est_foreign_sell / total_pressure) * 100, 1)
 
-        # Membuat bobot dinamis
-        buy_factor = 0.5 + (price_vs_vwap * 2) + (rsi_weight - 0.5)
-        buy_factor = max(0.1, min(0.9, buy_factor)) # Batasi antara 10% - 90%
-        sell_factor = 1.0 - buy_factor
 
-        dana_masuk_pct = round(buy_factor * 100, 1)
-        dana_keluar_pct = round(sell_factor * 100, 1)
+        # ... (di bawah bagian perhitungan Net Foreign)
+        net_foreign_val = est_foreign_buy - est_foreign_sell
         
         # Logika Kategori Inst Flow
         turnover_val = total_turnover_today / 1_000_000_000
