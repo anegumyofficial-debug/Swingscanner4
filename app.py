@@ -376,7 +376,7 @@ with st.sidebar:
         "Pilih Emiten Pantauan:", 
         
         options=master_tickers_clean, 
-        default=["FILM","BNBR","KLBV","FORU","RANS","PRDL","JELI","EMMI","KOKO","MIKA","AKRA","UVCR","BMHS","COCO","OMED","SKBM","ADHI","GGRM","ICBP","INDF","DSSA","EMAS","AMMN","TPIA","RBMS","BRMS","ELPI","RGAS","ENRG","MDKA","DEWA","BUMI","CUAN","RMKO","WBSA","IRSX","NZIA","ANTM","BBCA","BBRI","BBNI","BMRI","CPIN","JPFA","CMRY","ISAT","TLKM","JSMR])
+        default=["FILM","BNBR","KLBV","FORU","RANS","PRDL","JELI","EMMI","KOKO","MIKA","AKRA","UVCR","BMHS","COCO","OMED","SKBM","ADHI","GGRM","ICBP","INDF","DSSA","EMAS","AMMN","TPIA","RBMS","BRMS","ELPI","RGAS","ENRG","MDKA","DEWA","BUMI","CUAN","RMKO","WBSA","IRSX","NZIA","ANTM","BBCA","BBRI","BBNI","BMRI","CPIN","JPFA","CMRY","ISAT","TLKM","JSMR"])
 
 if len(saham_pilihan) > 0:
     df_scalp = run_scalper_scanner(saham_pilihan)
